@@ -6,8 +6,8 @@ import { BiMailSend, BiPhone, BiLogoInstagram, BiLogoTiktok, BiLogoFacebook } fr
 export default function Footer() {
 
   return (
-    <footer className="flex justify-content-center bg-blue-light text-white font-semibold p-8 mt-12">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-20 gap-y-8">
+    <footer className="bg-blue-light text-white font-semibold py-8 mt-12 ">
+      <div className="max-w-7xl grid grid-cols-1 md:grid-cols-[1fr_1.2fr_minmax(180px,0.8fr)] gap-y-6 px-4 mx-auto">
         {/* Contatti */}
         <div className="gap-2 text-center md:text-left">
           <h5 className="font-bold uppercase mb-2">Contatti</h5>
@@ -28,7 +28,7 @@ export default function Footer() {
         </div>
 
         {/* Info legali */}
-        <div className="gap-2 text-center">
+        <div className="text-center">
           <h5 className="font-bold mb-2">SPORTESSENCE</h5>
           <ul className="text-sm space-y-1">
             <li><span>P.IVA: </span><span> Inserire partita iva</span></li>
@@ -39,9 +39,9 @@ export default function Footer() {
         </div>
 
         {/* Social */}
-        <div className="gap-2 text-center items-center lg:text-right mb-5">
+        <div className="text-center items-center md:items-end md:text-right mb-5">
           <h5 className="font-bold uppercase mb-2">Seguici sui social</h5>
-          <div className="flex justify-center items-center lg:justify-end gap-8 text-3xl">
+          <div className="flex justify-center items-center md:justify-end gap-8 text-3xl">
             <a href="https://www.instagram.com/sportessence_official" target="_blank" aria-label="Instagram" className="hover:text-orange-500 transition-colors">
               <BiLogoInstagram />
             </a>

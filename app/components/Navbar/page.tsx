@@ -43,8 +43,8 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-blue-light sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-blue-light">
+      <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-auto">
           {/* Logo cliccabile */}
           <Link href="/" className="flex items-center shrink-0">
@@ -62,7 +62,7 @@ export default function Navbar() {
           <div className="hidden md:flex space-x-6 uppercase text-[15px]">
             {navLinks[role].map((link) => {
               const isActive =
-                pathname?.toLowerCase() === link.href.toLowerCase(); // 👈 confronto ignorando maiuscole/minuscole
+                pathname?.toLowerCase() === link.href.toLowerCase(); 
               return (
                 <Link
                   key={link.name}
