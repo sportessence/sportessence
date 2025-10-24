@@ -6,7 +6,7 @@ import { BiMailSend, BiPhone, BiLogoInstagram, BiLogoTiktok, BiLogoFacebook } fr
 export default function Footer() {
 
   return (
-    <footer className="bg-blue-light text-white font-semibold py-8 mt-12 ">
+    <footer className="bg-blue-light text-white font-semibold py-8">
       <div className="max-w-7xl grid grid-cols-1 md:grid-cols-[1fr_1.2fr_minmax(180px,0.8fr)] gap-y-6 px-4 mx-auto">
         {/* Contatti */}
         <div className="gap-2 text-center md:text-left">

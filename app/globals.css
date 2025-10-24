@@ -5,6 +5,8 @@
   --foreground: #171717;
   --blue-light: 0, 151, 178;   /* azzurro principale */
   --blue-deep: 7, 47, 86;       /* blu scuro per testi e accenti */
+  --cream:253, 247, 226;
+  --fox:230, 94, 27;
 }
 
 @theme inline {
@@ -31,6 +33,26 @@ body {
   background-color: rgb(var(--blue-light));
 }
 
+.bg-fox {
+  background-color: rgb(var(--fox));
+}
+
+.bg-blue-deep {
+  background-color: rgb(var(--blue-deep));
+}
+
+.bg-cream {
+  background-color: rgb(var(--cream));
+}
+
 .text-blue-deep {
   color: rgb(var(--blue-deep));
+}
+
+.text-fox {
+  color: rgb(var(--fox));
+}
+
+.text-blue-light {
+  color: rgb(var(--blue-light));
 }

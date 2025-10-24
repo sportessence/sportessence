@@ -15,28 +15,32 @@ export default function Navbar() {
   const [role, setRole] = useState<UserRole>("guest");
   const pathname = usePathname(); 
 
-  useEffect(() => {
-    const cookieRole = Cookies.get("role") as UserRole;
-    setRole(cookieRole || "guest");
-  }, []);
+//////OCCHio CHE FAI CHIAMATA API SENZA CHE CI SIA UN CAZZO DA CHIAMARE
+useEffect(() => {
+  fetch("/api/user/role", { credentials: "include" })
+    .then(res => res.json())
+    .then(data => setRole(data.role))
+    .catch(() => setRole("guest"));
+}, []);
 
   const navLinks: Record<UserRole, { name: string; href: string }[]> = {
     guest: [
-      { name: "Su di noi", href: "/About" },
-      { name: "Campi scuola", href: "/Campi" },
+      { name: "Chi siamo", href: "/About" },
+      { name: "Campi Estivi", href: "/Campi" },
       { name: "Info utili", href: "/Info" },
       { name: "Login", href: "/Login" },
       { name: "Registrazione", href: "/Registrazione" },
     ],
     user: [
-      { name: "Su di noi", href: "/About" },
+      { name: "Chi siamo", href: "/About" },
       { name: "Info utili", href: "/Info" },
-      { name: "Campi scuola", href: "/Campi" },
+      { name: "Campi Estivi", href: "/Campi" },
       { name: "Nuova Iscrizione", href: "/Iscrizione" },
       { name: "Pagina personale", href: "/Profilo" },
     ],
     admin: [
-      { name: "Campi scuola", href: "/Campi" },
+      { name: "Chi siamo", href: "/About" },
+      { name: "Campi Estivi", href: "/Campi" },
       { name: "Statistiche", href: "/Statistiche" },
       { name: "Pagamenti", href: "/Pagamenti" },
     ],
@@ -44,10 +48,10 @@ export default function Navbar() {
 
   return (
     <nav className="bg-blue-light">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center h-auto">
+      <div className="max-w-7xl mx-auto py-2 px-4 h-auto">
+        <div className="flex justify-between items-center">
           {/* Logo cliccabile */}
-          <Link href="/" className="flex items-center shrink-0">
+          <Link href="/" className="flex items-center">
             <Image
               src={logo}
               alt="SportEssence logo"
@@ -59,7 +63,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop menu */}
-          <div className="hidden md:flex space-x-6 uppercase text-[15px]">
+          <div className="hidden md:flex space-x-6 uppercase text-[18px]">
             {navLinks[role].map((link) => {
               const isActive =
                 pathname?.toLowerCase() === link.href.toLowerCase(); 
@@ -84,14 +88,14 @@ export default function Navbar() {
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden block transition-transform duration-200 hover:scale-130 p-2 rounded text-white"
           >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
+            {isOpen ? <X size={30} /> : <Menu size={30} />}
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden px-5 pb-3 space-y-2 bg-blue-light font-sans uppercase text-[14px]">
+        <div className="md:hidden px-5 pb-3 space-y-2 bg-blue-light font-sans uppercase text-[16px]">
           {navLinks[role].map((link) => {
             const isActive =
               pathname?.toLowerCase() === link.href.toLowerCase();
