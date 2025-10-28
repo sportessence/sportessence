@@ -25,6 +25,7 @@ useEffect(() => {
 
   const navLinks: Record<UserRole, { name: string; href: string }[]> = {
     guest: [
+      { name: "Home", href: "/" },
       { name: "Chi siamo", href: "/About" },
       { name: "Campi Estivi", href: "/Campi" },
       { name: "Info utili", href: "/Info" },
@@ -32,6 +33,7 @@ useEffect(() => {
       { name: "Registrazione", href: "/Registrazione" },
     ],
     user: [
+      { name: "Home", href: "/" },
       { name: "Chi siamo", href: "/About" },
       { name: "Info utili", href: "/Info" },
       { name: "Campi Estivi", href: "/Campi" },
@@ -39,6 +41,7 @@ useEffect(() => {
       { name: "Pagina personale", href: "/Profilo" },
     ],
     admin: [
+      { name: "Home", href: "/" },
       { name: "Chi siamo", href: "/About" },
       { name: "Campi Estivi", href: "/Campi" },
       { name: "Statistiche", href: "/Statistiche" },
@@ -62,31 +65,28 @@ useEffect(() => {
             />
           </Link>
 
-          {/* Desktop menu */}
-          <div className="hidden md:flex space-x-6 uppercase text-[18px]">
-            {navLinks[role].map((link) => {
-              const isActive =
-                pathname?.toLowerCase() === link.href.toLowerCase(); 
-              return (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className={`transition hover:underline hover:font-semibold hover:scale-110 ${
-                    isActive
-                      ? "text-white underline underline-offset-4 decoration-2 font-bold scale-110"
-                      : ""
-                  }`}
-                >
-                  {link.name}
-                </Link>
-              );
-            })}
-          </div>
+         {/* Desktop menu */}
+<div className="hidden lg:flex flex-nowrap space-x-6 uppercase text-[clamp(14px,2vw,18px)]">
+  {navLinks[role].map((link) => (
+    <Link
+      key={link.name}
+      href={link.href}
+      className={`transition hover:underline hover:font-semibold hover:scale-110 ${
+        pathname?.toLowerCase() === link.href.toLowerCase()
+          ? "text-white underline underline-offset-4 decoration-2 font-bold scale-110"
+          : ""
+      }`}
+    >
+      {link.name}
+    </Link>
+  ))}
+</div>
+
 
           {/* Mobile button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden block transition-transform duration-200 hover:scale-130 p-2 rounded text-white"
+            className="lg:hidden block transition-transform duration-200 hover:scale-130 p-2 rounded text-white"
           >
             {isOpen ? <X size={30} /> : <Menu size={30} />}
           </button>
@@ -95,7 +95,7 @@ useEffect(() => {
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden px-5 pb-3 space-y-2 bg-blue-light font-sans uppercase text-[16px]">
+        <div className="lg:hidden px-5 pb-3 space-y-2 bg-blue-light font-sans uppercase text-[16px]">
           {navLinks[role].map((link) => {
             const isActive =
               pathname?.toLowerCase() === link.href.toLowerCase();

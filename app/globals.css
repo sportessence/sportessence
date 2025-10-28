@@ -56,3 +56,20 @@ body {
 .text-blue-light {
   color: rgb(var(--blue-light));
 }
+/* Firefox */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--blue-light)) transparent; /* blue-light */
+}
+
+/* Chrome, Edge, Safari */
+.scrollbar-custom::-webkit-scrollbar {
+  height: 8px; /* spessore barra orizzontale */
+}
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--blue-light)); /* blu chiaro */
+  border-radius: 9999px;
+}
