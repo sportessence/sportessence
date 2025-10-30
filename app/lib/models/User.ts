@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema(
       CAP: String,
     },
     password: { type: String, required: true },
-    figli: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    figli: [{ type: mongoose.Schema.Types.ObjectId, ref: "Child" }],
   },
   { collection: "Users" } 
 );

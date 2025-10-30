@@ -3,7 +3,7 @@
 import Link from "next/link";
 import AttivitaSlider from "@/app/components/attivitaSlider";
 import TestimonianzeSlider from "@/app/components/testimonianzeSlider";
-import prova from "@/public/hero.jpg";
+import prova from "@/public/imgs/hero.jpg";
 
 export default function Home() {
   return (
@@ -40,7 +40,7 @@ export default function Home() {
         <div className="flex flex-col md:flex-row md:items-start items-center gap-12">
           <div className="flex flex-col items-center md:items-start gap-4">
             <Image
-              src="/logoNoSfondo.png"
+              src="/imgs/logoNoSfondo.png"
               alt="Logo Azienda"
               width={900}
               height={900}
@@ -63,7 +63,7 @@ export default function Home() {
         <div className="flex flex-col md:flex-row items-center gap-12 max-w-7xl mx-auto">
           <div className="flex flex-col items-center gap-4">
             <Image
-              src="/mascotte.png"
+              src="/imgs/mascotte.png"
               alt="Mascotte FIRO"
               width={400}
               height={400}

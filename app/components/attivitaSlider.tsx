@@ -3,12 +3,12 @@ import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 
 const attivita = [
-  { title: "Sport e Movimento", img: "/sport.jpg", desc: "Giochi di squadra, tornei e tanto divertimento: ogni giorno si scopre qualcosa di nuovo in campo." },
-  { title: "Creatività senza limiti", img: "/colori.jpg", desc: "Colori, musica e fantasia: mettiamo le mani in pasta e diamo forma alle idee più pazze." },
-  { title: "Squadra e Amicizia", img: "/squadra.jpg", desc: "Lavorare insieme, aiutarsi e ridere tanto: la vera forza del camp è il gruppo." },
-  { title: "Giochi e Sfide", img: "/arco.jpg", desc: "Caccia al tesoro, quiz, scacchi, mini-olimpiadi: ogni giorno una sfida diversa!" },
-  { title: "Allenamento per la mente", img: "/scacchi.jpg", desc: "Non solo muscoli: alleniamo anche la concentrazione, la strategia e la fantasia." },
-  { title: "Relax e Divertimento", img: "/provoHero.jpg", desc: "Momenti tranquilli per ricaricare le energie tra una partita e un laboratorio creativo." },
+  { title: "Sport e Movimento", img: "/imgs/sport.jpg", desc: "Giochi di squadra, tornei e tanto divertimento: ogni giorno si scopre qualcosa di nuovo in campo." },
+  { title: "Creatività senza limiti", img: "/imgs/colori.jpg", desc: "Colori, musica e fantasia: mettiamo le mani in pasta e diamo forma alle idee più pazze." },
+  { title: "Squadra e Amicizia", img: "/imgs/squadra.jpg", desc: "Lavorare insieme, aiutarsi e ridere tanto: la vera forza del camp è il gruppo." },
+  { title: "Giochi e Sfide", img: "/imgs/arco.jpg", desc: "Caccia al tesoro, quiz, scacchi, mini-olimpiadi: ogni giorno una sfida diversa!" },
+  { title: "Allenamento per la mente", img: "/imgs/scacchi.jpg", desc: "Non solo muscoli: alleniamo anche la concentrazione, la strategia e la fantasia." },
+  { title: "Relax e Divertimento", img: "/imgs/provoHero.jpg", desc: "Momenti tranquilli per ricaricare le energie tra una partita e un laboratorio creativo." },
 ];
 
 export default function AttivitaSlider() {

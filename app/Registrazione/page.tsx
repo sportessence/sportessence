@@ -34,7 +34,7 @@ export default function Registrazione() {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const nomeRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ'’\s-]+$/;
 const codiceFiscaleRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
-  const phoneRegex = /^(\+39)?\s?\d{3}\s?\d{6,7}$/;
+const phoneRegex = /^3\d{9}$/;
 
 
  const [alertMsg, setAlertMsg] = useState<string | null>(null);
@@ -70,30 +70,58 @@ const codiceFiscaleRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
     console.log(msg)
   };
 
-  const handleSubmit = async(e: { preventDefault: () => void }) => {
-    e.preventDefault();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    if (!emailRegex.test(form.email)) return showAlert("Email non valida");
-    if (Object.values(pwdFlags).some((f) => !f)) return showAlert("Password non valida");
-    if (form.password !== form.confermaPassword) return showAlert("Le password non coincidono");
-    if (!nomeRegex.test(form.nome) || !nomeRegex.test(form.cognome)) return showAlert("Nome o cognome non valido");
-    if (!codiceFiscaleRegex.test(form.codiceFiscale)) return showAlert("Codice fiscale non valido");
-    if (!phoneRegex.test(form.telefono)) return showAlert("Numero di telefono non valido");
+const handleSubmit = async (e: { preventDefault: () => void }) => {
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    const indirizzoValido = await verificaIndirizzo();
-    if (!indirizzoValido) return showAlert("Indirizzo non trovato");
+  // Validazioni client
+  if (!emailRegex.test(form.email)) {
+    showAlert("Email non valida");
+    setIsSubmitting(false);
+    return;
+  }
+  if (Object.values(pwdFlags).some((f) => !f)) {
+    showAlert("Password non valida");
+    setIsSubmitting(false);
+    return;
+  }
+  if (form.password !== form.confermaPassword) {
+    showAlert("Le password non coincidono");
+    setIsSubmitting(false);
+    return;
+  }
+  if (!nomeRegex.test(form.nome) || !nomeRegex.test(form.cognome)) {
+    showAlert("Nome o cognome non valido");
+    setIsSubmitting(false);
+    return;
+  }
+  const telefonoPulito = form.telefono.replace(/\s+/g, "");
+  if (!phoneRegex.test(telefonoPulito)) {
+    showAlert("Numero di telefono non valido");
+    setIsSubmitting(false);
+    return;
+  }
+
+  // Verifica indirizzo
+  const indirizzoValido = await verificaIndirizzo();
+  if (!indirizzoValido) {
+    showAlert("Indirizzo non trovato");
+    setIsSubmitting(false);
+    return;
+  }
 
   try {
-      // Chiamata all'API per registrazione + invio email
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    const res = await fetch("/api/user/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         nome: form.nome,
         cognome: form.cognome,
         email: form.email,
-        codiceFiscale: form.codiceFiscale,
-        telefono: form.telefono,
+        CF: form.codiceFiscale,
+        telefono: telefonoPulito,
         emailContatto: form.emailContatto,
         residenza: {
           via: form.via,
@@ -105,40 +133,71 @@ const codiceFiscaleRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
         password: form.password,
       }),
     });
-      const data = await res.json();
-      if (data.success) {
-        showAlert("Registrazione completata! Controlla la tua email.", "success");
-        setTimeout(() => router.push("/login"), 2000);
-      } else {
-        showAlert(data.message || "Errore durante la registrazione");
-      }
-    } catch (err) {
-      showAlert("Errore di connessione");
+
+    const data = await res.json();
+    if (data.success) {
+      showAlert("Registrazione completata! Reindirizzamento al login", "success");
+      setTimeout(() => router.push("/Login"), 2000);
+    } else {
+      showAlert(data.message || "Errore durante la registrazione");
     }
-  };
+  } catch {
+    showAlert("Errore di connessione");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
 
-  const verificaIndirizzo = async () => {
-  const { via, civico, cap, paese, provincia } = form;
-  const query = `${via} ${civico}, ${cap} ${paese}, ${provincia}, Italia`;
+
+const verificaIndirizzo = async () => {
+  const { via, civico, paese, provincia } = form;
+  // Non includiamo il CAP nella query
+  const query = `${via} ${civico}, ${paese}, ${provincia}, Italia`;
 
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(query)}`
+    );
     const data = await res.json();
-    return data.length > 0;
-  } catch {
+
+    if (data.length > 0) {
+      const address = data[0].address;
+
+      // Se troviamo un CAP nei risultati, aggiorniamo il form
+      if (address.postcode) {
+        setForm((prev) => ({ ...prev, cap: address.postcode }));
+      }
+
+      return true; // indirizzo trovato
+    }
+
+    return false; // indirizzo non trovato
+  } catch (err) {
+    console.error("Errore verifica indirizzo:", err);
     return false;
   }
 };
 
 
+
   return (
-    <main className="min-h-screen bg-cream flex items-center justify-center px-4 py-12">
+    <main className="min-h-screen bg-cream flex items-center relative justify-center px-4 py-12">
+
+      {/* Immagine di sfondo trasparente */}
+  <div className="absolute top-0 left-0 w-full h-full z-10">
+    <img
+      src="/imgs/sfondoregistrazione.jpg"
+      alt="Sfondo decorativo"
+      className="w-full h-full object-cover opacity-40" // opacity ridotta
+    />
+  </div>
+
         
          {/* ALERT */}
         {alertMsg && (
             <div
-            className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-lg font-semibold shadow-lg ${
+            className={`fixed z-11 top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-lg font-semibold shadow-lg ${
                 alertType === "error"
                 ? "bg-red-500 text-white"
                 : "bg-green-500 text-white"
@@ -147,8 +206,8 @@ const codiceFiscaleRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
             {alertMsg}
           </div>
         )}
-                <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-10 w-full max-w-2xl">
         
+        <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-10 w-full max-w-2xl relative z-10">
         <h1 className="text-3xl font-bold text-blue-deep mb-6 text-center">
           Crea il tuo account
         </h1>
@@ -224,7 +283,7 @@ const codiceFiscaleRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
             </div>
             <div>
               <label className="block text-blue-deep font-semibold mb-1">
-                Telefono
+                Cellulare
               </label>
               <input
                 type="tel"
@@ -250,12 +309,13 @@ const codiceFiscaleRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
                 checked={form.usaStessaEmail}
                 onChange={handleChange}
                 className="w-4 h-4 accent-cyan-600"
-              />
+                />
               <span className="text-sm text-blue-deep">
                 Usa la stessa email dell’account
               </span>
             </div>
             <input
+              required
               type="email"
               name="emailContatto"
               value={form.emailContatto}
@@ -316,20 +376,20 @@ const codiceFiscaleRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
 
               {/* Flags visivi password */}
               <ul className="text-sm space-y-1 mt-2">
-                <li className={pwdFlags.length ? "text-green-600" : "text-gray-500"}>
-                  ✅ Almeno 8 caratteri
+                <li className={pwdFlags.length ? "text-green-600 line-through" : "text-gray-500"}>
+                  - Almeno 8 caratteri
                 </li>
-                <li className={pwdFlags.uppercase ? "text-green-600" : "text-gray-500"}>
-                  ✅ Una lettera maiuscola
+                <li className={pwdFlags.uppercase ? "text-green-600 line-through" : "text-gray-500"}>
+                  - Una lettera maiuscola
                 </li>
-                <li className={pwdFlags.lowercase ? "text-green-600" : "text-gray-500"}>
-                  ✅ Una lettera minuscola
+                <li className={pwdFlags.lowercase ? "text-green-600 line-through" : "text-gray-500"}>
+                  - Una lettera minuscola
                 </li>
-                <li className={pwdFlags.number ? "text-green-600" : "text-gray-500"}>
-                  ✅ Almeno un numero
+                <li className={pwdFlags.number ? "text-green-600 line-through" : "text-gray-500"}>
+                  - Almeno un numero
                 </li>
-                <li className={pwdFlags.special ? "text-green-600" : "text-gray-500"}>
-                  ✅ Un carattere speciale (!@#$%)
+                <li className={pwdFlags.special ? "text-green-600 line-through" : "text-gray-500"}>
+                  - Un carattere speciale (!@#$%)
                 </li>
               </ul>
             </div>
@@ -355,19 +415,22 @@ const codiceFiscaleRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
           </div>
 
           {/* Submit */}
-          <button
-            type="submit"
-            className="w-full bg-cyan-600 text-white py-3 rounded-lg shadow-md 
-              hover:-translate-y-1 hover:shadow-xl hover:bg-cyan-700 hover:cursor-pointer
-              active:translate-y-0 active:shadow-md transition-all duration-300 ease-out font-semibold"
-          >
-            Registrati
-          </button>
+<button
+  type="submit"
+  disabled={isSubmitting}
+  className={`w-full bg-cyan-600 text-white py-3 rounded-lg shadow-md 
+    hover:-translate-y-1 hover:shadow-xl hover:bg-cyan-700 hover:cursor-pointer
+    active:translate-y-0 active:shadow-md transition-all duration-300 ease-out font-semibold
+    ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""}`}
+>
+  {isSubmitting ? "Invio dati in corso…" : "Registrati"}
+</button>
+
         </form>
 
         <p className="text-center text-sm text-gray-600 mt-6">
           Hai già un account?{" "}
-          <a href="/login" className="text-cyan-600 font-semibold hover:underline">
+          <a href="/Login" className="text-cyan-600 font-semibold hover:underline">
             Accedi qui
           </a>
         </p>
