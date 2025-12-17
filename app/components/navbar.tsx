@@ -1,42 +1,91 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Menu, X, LogOut } from "lucide-react";
 import Image from "next/image";
 import logo from "@/public/imgs/logo.png";
 import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "../utils/supabase/client";
 
 type UserRole = "guest" | "user" | "admin";
 
-export default function Navbar() {
+interface NavbarProps {
+  initialRole: UserRole;
+}
+
+export default function Navbar({ initialRole }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [role, setRole] = useState<UserRole>("guest");
+  const [role, setRole] = useState<UserRole>(initialRole);
   const pathname = usePathname();
   const router = useRouter();
-
-  // Fetch ruolo da server
-  const fetchRole = async () => {
-    try {
-      const res = await fetch("/api/user/cookies", { credentials: "include" });
-      const data = await res.json();
-      setRole(data.role as UserRole);
-    } catch {
-      setRole("guest");
-    }
-  };
+  const supabase = createClient();
+  
+  const isCheckingRef = useRef(false);
 
   useEffect(() => {
-    fetchRole();
+    const checkUser = async () => {
+      if (isCheckingRef.current) return;
+      isCheckingRef.current = true;
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+          setRole("guest");
+          return;
+        }
+
+        const { data: adminRow } = await supabase
+          .from('admins_whitelist')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+
+        const newRole = adminRow ? "admin" : "user";
+        setRole(newRole);
+      } finally {
+        isCheckingRef.current = false;
+      }
+    };
+
+    if (role === "guest") {
+      checkUser();
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        setRole("guest");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/user/cookies", { method: "POST", credentials: "include" });
-      setRole("guest"); // aggiorna stato a guest
-      router.push("/"); // torna alla home
+      // ✅ 1. Logout da Supabase
+      await supabase.auth.signOut();
+      
+      // ✅ 2. Pulisci tutti i cookie manualmente (backup)
+      // Questo garantisce che anche cookie residui vengano rimossi
+      if (typeof document !== 'undefined') {
+        document.cookie.split(";").forEach((cookie) => {
+          const cookieName = cookie.split("=")[0].trim();
+          // Rimuovi il cookie settandolo con data passata
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        });
+      }
+      
+      // ✅ 3. Aggiorna stato locale
+      setRole("guest");
+      
+      // ✅ 4. Hard reload per pulire tutto
+      window.location.href = "/";
     } catch (err) {
       console.error("Errore logout:", err);
+      // ✅ Anche in caso di errore, forza il reload
+      window.location.href = "/";
     }
   };
 
@@ -58,19 +107,27 @@ export default function Navbar() {
       { name: "Pagina personale", href: "/Utente" },
     ],
     admin: [
-      { name: "Home", href: "/" },
-      { name: "Chi siamo", href: "/About" },
-      { name: "Campi Estivi", href: "/Campi" },
-      { name: "Statistiche", href: "/Statistiche" },
-      { name: "Pagamenti", href: "/Pagamenti" },
+      { name: "Dashboard", href: "/admin/Dashboard" },
+      { name: "Campi Estivi", href: "/admin/Campi" },
+      { name: "Pagamenti", href: "/admin/Pagamenti" },
     ],
   };
 
   return (
     <nav className="bg-blue-light">
       <div className="max-w-7xl mx-auto py-2 px-4 h-auto flex justify-between items-center">
-        <Link href="/" className="flex items-center">
-          <Image src={logo} alt="SportEssence logo" quality={100} width={290} height={150} priority />
+        <Link 
+          href={role === "admin" ? "/admin/Dashboard" : "/"} 
+          className="flex items-center"
+        >
+          <Image 
+            src={logo} 
+            alt="SportEssence logo" 
+            quality={100} 
+            width={290} 
+            height={150} 
+            priority 
+          />
         </Link>
 
         {/* Menu desktop */}
@@ -90,7 +147,12 @@ export default function Navbar() {
           ))}
 
           {role !== "guest" && (
-            <button onClick={handleLogout} className="ml-4 text-white hover:text-red-400 transition">
+            <button 
+              onClick={handleLogout} 
+              className="ml-4 text-white hover:text-red-400 transition"
+              aria-label="Logout"
+              title="Esci"
+            >
               <LogOut size={20} />
             </button>
           )}
@@ -100,6 +162,7 @@ export default function Navbar() {
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="lg:hidden block transition-transform duration-200 hover:scale-110 p-2 rounded text-white"
+          aria-label={isOpen ? "Chiudi menu" : "Apri menu"}
         >
           {isOpen ? <X size={30} /> : <Menu size={30} />}
         </button>
@@ -130,9 +193,11 @@ export default function Navbar() {
                 handleLogout();
                 setIsOpen(false);
               }}
-              className="block mt-2 text-white hover:text-red-400 transition"
+              className="flex items-center gap-2 mt-2 text-white hover:text-red-400 transition"
+              aria-label="Logout"
             >
               <LogOut size={20} />
+              <span>Esci</span>
             </button>
           )}
         </div>

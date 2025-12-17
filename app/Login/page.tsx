@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { login } from "@/app/actions/auth";
 
 export default function Login() {
   const router = useRouter();
@@ -12,8 +13,6 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [alertType, setAlertType] = useState<"error" | "success">("error");
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const handleChange = (e: { target: { name: string; value: string } }) => {
     const { name, value } = e.target;
@@ -26,71 +25,70 @@ export default function Login() {
     setTimeout(() => setAlertMsg(null), 5000);
   };
 
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    if (!emailRegex.test(form.email)) {
-      showAlert("Email non valida");
-      setIsSubmitting(false);
-      return;
-    }
-    if (!form.password) {
-      showAlert("Inserisci la password");
+    if (!form.email || !form.password) {
+      showAlert("Compila tutti i campi");
       setIsSubmitting(false);
       return;
     }
 
     try {
-const res = await fetch("/api/user/login", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  credentials: "include", // <--- aggiungi questa riga
-  body: JSON.stringify(form),
-});
+      const formData = new FormData();
+      formData.append("email", form.email);
+      formData.append("password", form.password);
 
+      // ✅ Chiama la Server Action
+      const result = await login(formData);
 
-      const data = await res.json();
-      if (data.success) {
-        showAlert("Login effettuato!", "success");
-        setTimeout(() =>  window.location.href = "/Utente", 1500);
-      } else {
-        showAlert(data.message || "Email o password errati");
+      if (result?.error) {
+        showAlert(result.error);
+        setIsSubmitting(false);
+        return;
       }
-    } catch {
+
+      // ✅ Login riuscito! Ora fai redirect in base al ruolo
+      if (result?.success && result?.role) {
+        const targetUrl = result.role === 'admin' ? '/admin/Dashboard' : '/';
+        
+        // ✅ SOLUZIONE DEFINITIVA: Hard reload per garantire che tutto sia aggiornato
+        // Questo forza il browser a ricaricare tutto da zero con i cookie corretti
+        window.location.href = targetUrl;
+        
+        // Non serve impostare isSubmitting a false perché la pagina si ricarica
+      }
+      
+    } catch (error: any) {
+      console.error("Login error:", error);
       showAlert("Errore di connessione");
-    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
     <main className="min-h-screen bg-cream flex justify-center items-start pt-24 relative">
+      <div className="absolute top-0 left-0 w-full h-full z-10">
+        <img
+          src="/imgs/sfondoLogin.jpg"
+          alt="Sfondo decorativo"
+          className="w-full h-full object-cover opacity-40"
+        />
+      </div>
 
-      {/* Immagine di sfondo trasparente */}
-  <div className="absolute top-0 left-0 w-full h-full z-10">
-    <img
-      src="/imgs/sfondoLogin.jpg"
-      alt="Sfondo decorativo"
-      className="w-full h-full object-cover opacity-40" // opacity ridotta
-    />
-  </div>
+      {/* ALERT */}
+      {alertMsg && (
+        <div
+          className={`fixed z-50 top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-lg font-semibold shadow-lg ${
+            alertType === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
+          }`}
+        >
+          {alertMsg}
+        </div>
+      )}
 
-
-       {/* ALERT */}
-        {alertMsg && (
-            <div
-            className={`fixed z-11 top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-lg font-semibold shadow-lg ${
-                alertType === "error"
-                ? "bg-red-500 text-white"
-                : "bg-green-500 text-white"
-            }`}
-          >
-            {alertMsg}
-          </div>
-        )}
-
-      <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-10 w-full max-w-md relative z-10">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-10 w-full max-w-md relative z-20">
         <h1 className="text-3xl font-bold text-blue-deep mb-6 text-center">
           Accedi al tuo account
         </h1>
@@ -127,27 +125,27 @@ const res = await fetch("/api/user/login", {
             disabled={isSubmitting}
             className={`w-full bg-cyan-600 text-white py-3 rounded-lg shadow-md 
               hover:-translate-y-1 hover:shadow-xl hover:bg-cyan-700 hover:cursor-pointer
-              active:translate-y-0 active:shadow-md transition-all duration-300 ease-out font-semibold
+              transition-all duration-300 ease-out font-semibold
               ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""}`}
           >
-            {isSubmitting ? "Invio dati in corso…" : "Accedi"}
+            {isSubmitting ? "Accesso in corso..." : "Accedi"}
           </button>
         </form>
 
-<div className="mt-4 text-center text-sm text-gray-600 space-y-2">
-  <p>
-    Non hai un account?{" "}
-    <a href="/Registrazione" className="text-cyan-600 font-semibold hover:underline">
-      Crea account
-    </a>
-  </p>
-  <p>
-    Hai dimenticato la password?{" "}
-    <a href="/recupero-password" className="text-cyan-600 font-semibold hover:underline">
-      Recupera password
-    </a>
-  </p>
-</div>
+        <div className="mt-4 text-center text-sm text-gray-600 space-y-2">
+          <p>
+            Non hai un account?{" "}
+            <a href="/Registrazione" className="text-cyan-600 font-semibold hover:underline">
+              Crea account
+            </a>
+          </p>
+          <p>
+            Hai dimenticato la password?{" "}
+            <a href="/RecuperoPassword" className="text-cyan-600 font-semibold hover:underline">
+              Recupera password
+            </a>
+          </p>
+        </div>
       </div>
     </main>
   );
