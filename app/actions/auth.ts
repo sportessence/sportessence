@@ -2,13 +2,13 @@
 
 import { createClient } from '../utils/supabase/server'
 import { headers } from "next/headers"
-import { redirect } from 'next/navigation'
 
 // --- REGISTRAZIONE ---
 export async function signup(formData: any) {
   const supabase = await createClient()
-  const email = formData.email.trim().toLowerCase()
+  
   const { 
+    email, 
     password, 
     nome, 
     cognome, 
@@ -22,9 +22,13 @@ export async function signup(formData: any) {
     provincia
   } = formData
 
+  // 1. Crea utente auth
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      emailRedirectTo: `${(await headers()).get("origin")}/auth/callback`,
+    }
   })
 
   if (authError) {
@@ -35,6 +39,7 @@ export async function signup(formData: any) {
     return { error: "Errore sconosciuto durante la creazione utente." }
   }
 
+  // 2. Crea profilo
   const { error: profileError } = await supabase
     .from('profiles')
     .insert({
@@ -44,7 +49,7 @@ export async function signup(formData: any) {
       cognome: cognome,
       cf: codiceFiscale,
       telefono: telefono,
-      email_contatti: emailContatto,
+      email_contatti: emailContatto || email,
       indirizzo_via: via,
       indirizzo_civico: civico,
       indirizzo_paese: paese,
@@ -54,7 +59,7 @@ export async function signup(formData: any) {
 
   if (profileError) {
     console.error("Errore salvataggio profilo:", profileError)
-    return { error: "Errore nel salvataggio:" + profileError.message }
+    return { error: "Registrazione riuscita ma errore nel profilo: " + profileError.message }
   }
 
   return { success: true }
@@ -90,43 +95,60 @@ export async function login(formData: FormData) {
 
   const isAdmin = !!adminRow
 
-  // 3. ✅ INVECE DI REDIRECT, RITORNA IL RUOLO
-  //    Il client farà il redirect dopo aver aggiornato tutto
+  // 3. Ritorna il ruolo (il client farà redirect)
   return { 
     success: true, 
     role: isAdmin ? 'admin' : 'user' as 'admin' | 'user'
   }
 }
 
-// --- PASSWORD RESET ---
+// --- RECUPERO PASSWORD: Passo 1 - Richiesta Reset ---
 export async function forgotPassword(formData: FormData) {
   const supabase = await createClient()
   const email = formData.get("email") as string
   
+  if (!email) {
+    return { error: "Email richiesta" }
+  }
+
   const origin = (await headers()).get("origin")
 
+  // Invia email con link per reset
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=/RecuperoPassword`,
+    redirectTo: `${origin}/auth/callback?next=/ResetPassword`,
   })
 
   if (error) {
-    console.error(error.message) 
-    return { error: "Impossibile inviare la richiesta. Riprova più tardi." }
+    console.error("Errore reset password:", error.message)
+    // ⚠️ IMPORTANTE: Non rivelare se l'email esiste o no (sicurezza)
+    // Ritorna sempre success anche se email non esiste
+    return { success: true }
   }
 
   return { success: true }
 }
 
+// --- RECUPERO PASSWORD: Passo 2 - Aggiorna Password ---
 export async function updatePassword(formData: FormData) {
   const supabase = await createClient()
   const password = formData.get("password") as string
 
+  if (!password) {
+    return { error: "Password richiesta" }
+  }
+
+  if (password.length < 8) {
+    return { error: "La password deve essere di almeno 8 caratteri" }
+  }
+
+  // Aggiorna password dell'utente corrente
   const { error } = await supabase.auth.updateUser({
     password: password,
   })
 
   if (error) {
-    return { error: "Errore aggiornamento password" }
+    console.error("Errore aggiornamento password:", error)
+    return { error: "Errore durante l'aggiornamento della password" }
   }
 
   return { success: true }
