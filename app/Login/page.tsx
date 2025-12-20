@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/app/actions/auth";
+import { executeRecaptcha } from "@/app/utils/recaptcha";
 
 export default function Login() {
   const router = useRouter();
@@ -13,6 +14,22 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [alertType, setAlertType] = useState<"error" | "success">("error");
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+
+  useEffect(() => {
+    // Carica reCAPTCHA quando il componente monta
+    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (siteKey) {
+      const script = document.createElement('script');
+      script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setRecaptchaLoaded(true);
+      document.head.appendChild(script);
+    } else {
+      setRecaptchaLoaded(true); // Continua senza reCAPTCHA se non configurato
+    }
+  }, []);
 
   const handleChange = (e: { target: { name: string; value: string } }) => {
     const { name, value } = e.target;
@@ -36,11 +53,26 @@ export default function Login() {
     }
 
     try {
+      // 1. Esegui reCAPTCHA (se configurato)
+      let recaptchaToken = null;
+      if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+        recaptchaToken = await executeRecaptcha('login');
+        if (!recaptchaToken) {
+          showAlert("Errore verifica di sicurezza. Riprova.");
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // 2. Prepara FormData
       const formData = new FormData();
       formData.append("email", form.email);
       formData.append("password", form.password);
+      if (recaptchaToken) {
+        formData.append("recaptchaToken", recaptchaToken);
+      }
 
-      // ✅ Chiama la Server Action
+      // 3. Chiama la Server Action
       const result = await login(formData);
 
       if (result?.error) {
@@ -49,15 +81,10 @@ export default function Login() {
         return;
       }
 
-      // ✅ Login riuscito! Ora fai redirect in base al ruolo
+      // 4. Login riuscito! Redirect in base al ruolo
       if (result?.success && result?.role) {
         const targetUrl = result.role === 'admin' ? '/admin/Dashboard' : '/';
-        
-        // ✅ SOLUZIONE DEFINITIVA: Hard reload per garantire che tutto sia aggiornato
-        // Questo forza il browser a ricaricare tutto da zero con i cookie corretti
         window.location.href = targetUrl;
-        
-        // Non serve impostare isSubmitting a false perché la pagina si ricarica
       }
       
     } catch (error: any) {
@@ -122,13 +149,13 @@ export default function Login() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !recaptchaLoaded}
             className={`w-full bg-cyan-600 text-white py-3 rounded-lg shadow-md 
               hover:-translate-y-1 hover:shadow-xl hover:bg-cyan-700 hover:cursor-pointer
               transition-all duration-300 ease-out font-semibold
-              ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""}`}
+              ${isSubmitting || !recaptchaLoaded ? "opacity-60 cursor-not-allowed" : ""}`}
           >
-            {isSubmitting ? "Accesso in corso..." : "Accedi"}
+            {isSubmitting ? "Accesso in corso..." : !recaptchaLoaded ? "Caricamento..." : "Accedi"}
           </button>
         </form>
 
@@ -146,6 +173,31 @@ export default function Login() {
             </a>
           </p>
         </div>
+
+        {/* reCAPTCHA Badge Info */}
+        {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+          <p className="text-xs text-gray-500 text-center mt-6">
+            Questo sito è protetto da reCAPTCHA e si applicano la{" "}
+            <a
+              href="https://policies.google.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              Privacy Policy
+            </a>{" "}
+            e i{" "}
+            <a
+              href="https://policies.google.com/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              Termini di Servizio
+            </a>{" "}
+            di Google.
+          </p>
+        )}
       </div>
     </main>
   );

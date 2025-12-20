@@ -1,16 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signup } from "@/app/actions/auth";
-import { verifyCaptcha } from "@/app/actions/captcha";
-import TurnstileCaptcha, { useCaptcha } from "@/app/components/TurnstileCaptcha";
-import { ValidationUtils } from "@/app/utils/validation";
+import { executeRecaptcha } from "@/app/utils/recaptcha";
 
 export default function Registrazione() {
   const router = useRouter();
-  
-  // State per il form
   const [form, setForm] = useState({
     email: "",
     nome: "",
@@ -26,38 +22,56 @@ export default function Registrazione() {
     provincia: "",
     password: "",
     confermaPassword: "",
-    accettoPrivacy: false, // ✨ NUOVO: consenso privacy
   });
 
-  // State per validazione
   const [isEmailValid, setIsEmailValid] = useState(true);
-  const [pwdStrength, setPwdStrength] = useState(ValidationUtils.validatePassword(""));
+  const [pwdFlags, setPwdFlags] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false,
+  });
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
 
-  // State per CAPTCHA
-  const { captchaToken, setCaptchaToken, resetCaptcha, isCaptchaVerified } = useCaptcha();
+  const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+  const nomeRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ''\s-]+$/;
+  const codiceFiscaleRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
+  const phoneRegex = /^3\d{9}$/;
 
-  // State per UI
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [alertType, setAlertType] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const showAlert = (msg: string, type: "error" | "success" = "error") => {
-    setAlertMsg(msg);
-    setAlertType(type);
-    setTimeout(() => setAlertMsg(null), 5000);
-  };
+  useEffect(() => {
+    // Carica reCAPTCHA quando il componente monta
+    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (siteKey) {
+      const script = document.createElement('script');
+      script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setRecaptchaLoaded(true);
+      document.head.appendChild(script);
+    } else {
+      setRecaptchaLoaded(true); // Continua senza reCAPTCHA se non configurato
+    }
+  }, []);
 
   const handleChange = (e: { target: { name: any; value: any; type: any; checked: any } }) => {
     const { name, value, type, checked } = e.target;
 
-    // Validazione email in tempo reale
-    if (name === "email") {
-      setIsEmailValid(ValidationUtils.validateEmail(value));
-    }
+    if (name === "email") setIsEmailValid(emailRegex.test(value));
 
-    // Validazione password in tempo reale
     if (name === "password") {
-      setPwdStrength(ValidationUtils.validatePassword(value));
+      const pwd = value;
+      setPwdFlags({
+        length: pwd.length >= 8,
+        uppercase: /[A-Z]/.test(pwd),
+        lowercase: /[a-z]/.test(pwd),
+        number: /\d/.test(pwd),
+        special: /[^A-Za-z0-9]/.test(pwd),
+      });
     }
 
     setForm((prev) => ({
@@ -65,6 +79,12 @@ export default function Registrazione() {
       [name]: type === "checkbox" ? checked : value,
       ...(name === "usaStessaEmail" && checked ? { emailContatto: prev.email } : {}),
     }));
+  };
+
+  const showAlert = (msg: string, type: "error" | "success" = "error") => {
+    setAlertMsg(msg);
+    setAlertType(type);
+    setTimeout(() => setAlertMsg(null), 5000);
   };
 
   const verificaIndirizzo = async () => {
@@ -95,126 +115,90 @@ export default function Registrazione() {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Validazioni
+    if (!emailRegex.test(form.email)) {
+      showAlert("Email non valida");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!codiceFiscaleRegex.test(form.codiceFiscale)) {
+      showAlert("Codice Fiscale non valido");
+      setIsSubmitting(false);
+      return;
+    }
+    if (Object.values(pwdFlags).some((f) => !f)) {
+      showAlert("Password non rispetta i criteri di sicurezza");
+      setIsSubmitting(false);
+      return;
+    }
+    if (form.password !== form.confermaPassword) {
+      showAlert("Le password non coincidono");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!nomeRegex.test(form.nome) || !nomeRegex.test(form.cognome)) {
+      showAlert("Nome o cognome contengono caratteri non validi");
+      setIsSubmitting(false);
+      return;
+    }
+    const telefonoPulito = form.telefono.replace(/\s+/g, "");
+    if (!phoneRegex.test(telefonoPulito)) {
+      showAlert("Numero di telefono non valido (deve iniziare con 3 ed essere di 10 cifre)");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Verifica indirizzo
+    const indirizzoValido = await verificaIndirizzo();
+    if (!indirizzoValido) {
+      showAlert("Indirizzo non trovato su mappa. Controlla i dati.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      // ✅ 1. VERIFICA CAPTCHA (PRIORITÀ MASSIMA)
-      if (!isCaptchaVerified || !captchaToken) {
-        showAlert("Completa la verifica di sicurezza");
-        setIsSubmitting(false);
-        return;
+      // 1. Esegui reCAPTCHA (se configurato)
+      let recaptchaToken = null;
+      if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+        recaptchaToken = await executeRecaptcha('signup');
+        if (!recaptchaToken) {
+          showAlert("Errore verifica di sicurezza. Riprova.");
+          setIsSubmitting(false);
+          return;
+        }
       }
 
-      // ✅ 1.5 VERIFICA CONSENSO PRIVACY (OBBLIGATORIO)
-      if (!form.accettoPrivacy) {
-        showAlert("Devi accettare la Privacy Policy per registrarti");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Verifica CAPTCHA lato server
-      const captchaVerification = await verifyCaptcha(captchaToken);
-      if (!captchaVerification.success) {
-        showAlert(captchaVerification.error || "Verifica di sicurezza fallita");
-        resetCaptcha();
-        setIsSubmitting(false);
-        return;
-      }
-
-      // ✅ 2. VALIDAZIONE EMAIL
-      if (!ValidationUtils.validateEmail(form.email)) {
-        showAlert("Email non valida");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // ✅ 3. VALIDAZIONE CODICE FISCALE
-      if (!ValidationUtils.validateCodiceFiscale(form.codiceFiscale)) {
-        showAlert("Codice Fiscale non valido o formato errato");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // ✅ 4. VALIDAZIONE PASSWORD
-      if (!pwdStrength.isValid) {
-        showAlert("Password non rispetta i criteri di sicurezza");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (form.password !== form.confermaPassword) {
-        showAlert("Le password non coincidono");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // ✅ 5. VALIDAZIONE NOME E COGNOME
-      if (!ValidationUtils.validateName(form.nome) || !ValidationUtils.validateName(form.cognome)) {
-        showAlert("Nome o cognome contengono caratteri non validi");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // ✅ 6. VALIDAZIONE TELEFONO
-      if (!ValidationUtils.validatePhoneNumber(form.telefono)) {
-        showAlert("Numero di telefono non valido (deve iniziare con 3 ed essere di 10 cifre)");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // ✅ 7. VALIDAZIONE CAP E PROVINCIA
-      if (!ValidationUtils.validateCAP(form.cap)) {
-        showAlert("CAP non valido (deve essere di 5 cifre)");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!ValidationUtils.validateProvincia(form.provincia)) {
-        showAlert("Provincia non valida (deve essere di 2 lettere)");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // ✅ 8. VERIFICA INDIRIZZO
-      const indirizzoValido = await verificaIndirizzo();
-      if (!indirizzoValido) {
-        showAlert("Indirizzo non trovato. Controlla i dati inseriti.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // ✅ 9. NORMALIZZAZIONE E SANITIZZAZIONE DATI
+      // 2. Prepara i dati per la Server Action
       const signupData = {
-        email: ValidationUtils.normalizeEmail(form.email),
-        password: form.password, // Non sanitizzare la password!
-        nome: ValidationUtils.sanitizeHtml(ValidationUtils.normalizeName(form.nome)),
-        cognome: ValidationUtils.sanitizeHtml(ValidationUtils.normalizeName(form.cognome)),
-        codiceFiscale: ValidationUtils.normalizeCodiceFiscale(form.codiceFiscale),
-        telefono: ValidationUtils.normalizePhoneNumber(form.telefono),
-        emailContatto: ValidationUtils.normalizeEmail(form.emailContatto),
-        via: ValidationUtils.sanitizeHtml(form.via.trim()),
-        civico: ValidationUtils.sanitizeHtml(form.civico.trim()),
-        cap: form.cap.trim(),
-        paese: ValidationUtils.sanitizeHtml(form.paese.trim()),
-        provincia: ValidationUtils.normalizeProvincia(form.provincia),
+        email: form.email,
+        password: form.password,
+        nome: form.nome,
+        cognome: form.cognome,
+        codiceFiscale: form.codiceFiscale,
+        telefono: telefonoPulito,
+        emailContatto: form.emailContatto,
+        via: form.via,
+        civico: form.civico,
+        cap: form.cap,
+        paese: form.paese,
+        provincia: form.provincia,
+        recaptchaToken: recaptchaToken,
       };
 
-      // ✅ 10. CHIAMATA SERVER ACTION
       const res = await signup(signupData);
 
       if (res?.error) {
         showAlert(res.error);
-        resetCaptcha();
       } else {
         showAlert(
           "Registrazione completata! Controlla la tua email per confermare l'account.",
           "success"
         );
-        // Redirect dopo 3 secondi
         setTimeout(() => router.push("/Login"), 3000);
       }
     } catch (err) {
       console.error(err);
       showAlert("Errore imprevisto durante la registrazione");
-      resetCaptcha();
     } finally {
       setIsSubmitting(false);
     }
@@ -249,7 +233,7 @@ export default function Registrazione() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* EMAIL PRINCIPALE */}
           <div>
-            <label className="block text-blue-deep font-semibold mb-1">Email principale *</label>
+            <label className="block text-blue-deep font-semibold mb-1">Email principale</label>
             <input
               type="email"
               name="email"
@@ -261,15 +245,12 @@ export default function Registrazione() {
                 !isEmailValid && form.email.length > 0 ? "border-red-400" : "border-gray-300"
               }`}
             />
-            {!isEmailValid && form.email.length > 0 && (
-              <p className="text-red-500 text-xs mt-1">Formato email non valido</p>
-            )}
           </div>
 
           {/* NOME E COGNOME */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">Nome *</label>
+              <label className="block text-blue-deep font-semibold mb-1">Nome</label>
               <input
                 type="text"
                 name="nome"
@@ -281,7 +262,7 @@ export default function Registrazione() {
               />
             </div>
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">Cognome *</label>
+              <label className="block text-blue-deep font-semibold mb-1">Cognome</label>
               <input
                 type="text"
                 name="cognome"
@@ -297,7 +278,7 @@ export default function Registrazione() {
           {/* CF E TELEFONO */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">Codice Fiscale *</label>
+              <label className="block text-blue-deep font-semibold mb-1">Codice Fiscale</label>
               <input
                 type="text"
                 name="codiceFiscale"
@@ -305,12 +286,11 @@ export default function Registrazione() {
                 onChange={handleChange}
                 placeholder="RSSMRA90A01F205X"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg uppercase focus:ring-2 focus:ring-cyan-600 text-black"
-                maxLength={16}
                 required
               />
             </div>
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">Cellulare *</label>
+              <label className="block text-blue-deep font-semibold mb-1">Cellulare</label>
               <input
                 type="tel"
                 name="telefono"
@@ -326,7 +306,7 @@ export default function Registrazione() {
           {/* INDIRIZZO (Via, Civico) */}
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">Via / Piazza *</label>
+              <label className="block text-blue-deep font-semibold mb-1">Via / Piazza</label>
               <input
                 type="text"
                 name="via"
@@ -338,7 +318,7 @@ export default function Registrazione() {
               />
             </div>
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">Civico *</label>
+              <label className="block text-blue-deep font-semibold mb-1">Civico</label>
               <input
                 type="text"
                 name="civico"
@@ -354,20 +334,19 @@ export default function Registrazione() {
           {/* INDIRIZZO (CAP, Paese, Provincia) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">CAP *</label>
+              <label className="block text-blue-deep font-semibold mb-1">CAP</label>
               <input
                 type="text"
                 name="cap"
                 value={form.cap}
                 onChange={handleChange}
                 placeholder="20100"
-                maxLength={5}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
                 required
               />
             </div>
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">Comune *</label>
+              <label className="block text-blue-deep font-semibold mb-1">Comune</label>
               <input
                 type="text"
                 name="paese"
@@ -379,15 +358,14 @@ export default function Registrazione() {
               />
             </div>
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">Prov. *</label>
+              <label className="block text-blue-deep font-semibold mb-1">Prov.</label>
               <input
                 type="text"
                 name="provincia"
                 value={form.provincia}
                 onChange={handleChange}
                 placeholder="MI"
-                maxLength={2}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg uppercase focus:ring-2 focus:ring-cyan-600 text-black"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
                 required
               />
             </div>
@@ -395,7 +373,7 @@ export default function Registrazione() {
 
           {/* EMAIL CONTATTO */}
           <div>
-            <label className="block text-blue-deep font-semibold mb-1">Email per contatti *</label>
+            <label className="block text-blue-deep font-semibold mb-1">Email per contatti</label>
             <input
               type="email"
               name="emailContatto"
@@ -423,7 +401,7 @@ export default function Registrazione() {
           {/* PASSWORD */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">Password *</label>
+              <label className="block text-blue-deep font-semibold mb-1">Password</label>
               <input
                 type="password"
                 name="password"
@@ -435,25 +413,25 @@ export default function Registrazione() {
                 className="w-full px-4 py-2 rounded-lg text-black border border-gray-300 focus:ring-2 focus:ring-cyan-600"
               />
               <ul className="text-xs space-y-1 mt-2 text-gray-500">
-                <li className={pwdStrength.hasMinLength ? "text-green-600 line-through" : ""}>
+                <li className={pwdFlags.length ? "text-green-600 line-through" : ""}>
                   - Almeno 8 caratteri
                 </li>
-                <li className={pwdStrength.hasUppercase ? "text-green-600 line-through" : ""}>
+                <li className={pwdFlags.uppercase ? "text-green-600 line-through" : ""}>
                   - Una maiuscola
                 </li>
-                <li className={pwdStrength.hasLowercase ? "text-green-600 line-through" : ""}>
+                <li className={pwdFlags.lowercase ? "text-green-600 line-through" : ""}>
                   - Una minuscola
                 </li>
-                <li className={pwdStrength.hasNumber ? "text-green-600 line-through" : ""}>
+                <li className={pwdFlags.number ? "text-green-600 line-through" : ""}>
                   - Un numero
                 </li>
-                <li className={pwdStrength.hasSpecial ? "text-green-600 line-through" : ""}>
+                <li className={pwdFlags.special ? "text-green-600 line-through" : ""}>
                   - Un carattere speciale
                 </li>
               </ul>
             </div>
             <div>
-              <label className="block text-blue-deep font-semibold mb-1">Conferma Password *</label>
+              <label className="block text-blue-deep font-semibold mb-1">Conferma Password</label>
               <input
                 type="password"
                 name="confermaPassword"
@@ -467,74 +445,22 @@ export default function Registrazione() {
                     : "border-gray-300"
                 } focus:ring-2 focus:ring-cyan-600`}
               />
-              {form.confermaPassword && form.confermaPassword !== form.password && (
-                <p className="text-red-500 text-xs mt-1">Le password non coincidono</p>
-              )}
             </div>
-          </div>
-
-          {/* PRIVACY POLICY - CONSENSO OBBLIGATORIO */}
-          <div className="border-t pt-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-blue-deep mb-4">
-                📋 Consenso al Trattamento dei Dati
-              </h3>
-              
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  name="accettoPrivacy"
-                  checked={form.accettoPrivacy}
-                  onChange={handleChange}
-                  required
-                  className="mt-1 w-5 h-5 accent-cyan-600 cursor-pointer"
-                />
-                <span className="text-gray-700 text-sm leading-relaxed">
-                  <span className="text-red-600 font-bold">*</span> Ho letto e accetto la{" "}
-                  <a 
-                    href="/privacy" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-cyan-600 font-semibold hover:underline"
-                  >
-                    Privacy Policy
-                  </a>
-                  {" "}e acconsento al trattamento dei miei dati personali e di quelli del minore 
-                  per le finalità indicate (gestione iscrizioni, sicurezza, comunicazioni relative ai campi estivi).
-                </span>
-              </label>
-
-              {!form.accettoPrivacy && (
-                <p className="text-xs text-gray-600 mt-3 ml-8">
-                  ⓘ Il consenso è obbligatorio per procedere con la registrazione
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* CAPTCHA */}
-          <div className="border-t pt-4">
-            <label className="block text-blue-deep font-semibold mb-3 text-center">
-              Verifica di sicurezza *
-            </label>
-            <TurnstileCaptcha
-              onVerify={setCaptchaToken}
-              onExpire={resetCaptcha}
-              onError={resetCaptcha}
-              theme="light"
-              size="normal"
-            />
           </div>
 
           {/* BOTTONE SUBMIT */}
           <button
             type="submit"
-            disabled={isSubmitting || !isCaptchaVerified || !form.accettoPrivacy}
+            disabled={isSubmitting || !recaptchaLoaded}
             className={`w-full bg-cyan-600 text-white py-3 rounded-lg shadow-md hover:bg-cyan-700 transition-all font-semibold ${
-              isSubmitting || !isCaptchaVerified || !form.accettoPrivacy ? "opacity-60 cursor-not-allowed" : ""
+              isSubmitting || !recaptchaLoaded ? "opacity-60 cursor-not-allowed" : ""
             }`}
           >
-            {isSubmitting ? "Registrazione in corso..." : "Registrati"}
+            {isSubmitting
+              ? "Registrazione in corso..."
+              : !recaptchaLoaded
+              ? "Caricamento..."
+              : "Registrati"}
           </button>
         </form>
 
@@ -545,16 +471,30 @@ export default function Registrazione() {
           </a>
         </p>
 
-        {/* Note Privacy */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg text-xs text-gray-600">
-          <p className="font-semibold text-blue-900 mb-2">🔒 Privacy e Sicurezza</p>
-          <ul className="space-y-1">
-            <li>• I tuoi dati sono protetti e crittografati</li>
-            <li>• Non condivideremo le tue informazioni con terze parti</li>
-            <li>• Rispettiamo il GDPR e i tuoi diritti sulla privacy</li>
-            <li>• Puoi richiedere la cancellazione dei tuoi dati in qualsiasi momento</li>
-          </ul>
-        </div>
+        {/* reCAPTCHA Badge Info */}
+        {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+          <p className="text-xs text-gray-500 text-center mt-4">
+            Questo sito è protetto da reCAPTCHA e si applicano la{" "}
+            <a
+              href="https://policies.google.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              Privacy Policy
+            </a>{" "}
+            e i{" "}
+            <a
+              href="https://policies.google.com/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              Termini di Servizio
+            </a>{" "}
+            di Google.
+          </p>
+        )}
       </div>
     </main>
   );

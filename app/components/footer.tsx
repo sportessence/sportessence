@@ -53,16 +53,6 @@ export default function Footer() {
       </div>
     </div>
   </div>
-
-  {/* Disclaimer cookies */}
-  <div className="max-w-7xl mx-auto px-4 mt-6 text-center">
-    <p className="text-sm text-white/40">
-      Questo sito utilizza solo cookie tecnici necessari al funzionamento. 
-      <a href="/privacy" className="underline hover:text-orange-500">
-        Maggiori informazioni
-      </a>.
-    </p>
-  </div>
 </footer>
 
   );

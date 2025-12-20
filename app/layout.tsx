@@ -5,6 +5,7 @@ import "./globals.css";
 
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
+import CookieBanner from "./components/cookieBanner";
 import { createClient } from "./utils/supabase/server";
 
 const montserrat = Montserrat({
@@ -76,6 +77,9 @@ export default async function RootLayout({
         <main className="flex-grow">{children}</main>
 
         <Footer />
+        
+        {/* ✅ Cookie Banner - Appare solo se necessario */}
+        <CookieBanner />
       </body>
     </html>
   );

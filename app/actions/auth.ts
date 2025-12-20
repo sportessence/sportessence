@@ -3,7 +3,7 @@
 import { createClient } from '../utils/supabase/server'
 import { headers } from "next/headers"
 
-// --- REGISTRAZIONE ---
+// --- REGISTRAZIONE CON RECAPTCHA ---
 export async function signup(formData: any) {
   const supabase = await createClient()
   
@@ -19,8 +19,23 @@ export async function signup(formData: any) {
     civico,
     cap,
     paese,
-    provincia
+    provincia,
+    recaptchaToken
   } = formData
+
+  // 0. Verifica reCAPTCHA (se configurato)
+  if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
+    const { verifyRecaptchaToken } = await import('../utils/recaptcha');
+    const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'signup');
+    
+    if (!recaptchaResult.success) {
+      console.log('❌ reCAPTCHA failed:', recaptchaResult.error);
+      return { error: "Verifica di sicurezza fallita. Riprova." }
+    }
+    
+    // Log dello score per monitoraggio
+    console.log('✅ reCAPTCHA passed - Score:', recaptchaResult.score);
+  }
 
   // 1. Crea utente auth
   const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -59,18 +74,32 @@ export async function signup(formData: any) {
 
   if (profileError) {
     console.error("Errore salvataggio profilo:", profileError)
-    return { error: "Errore salvataggio profilo: " + profileError.message }
+    return { error: "Registrazione riuscita ma errore nel profilo: " + profileError.message }
   }
 
   return { success: true }
 }
 
-// --- LOGIN CON RUOLO ---
+// --- LOGIN CON RUOLO E RECAPTCHA ---
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const recaptchaToken = formData.get('recaptchaToken') as string
+
+  // 0. Verifica reCAPTCHA (se configurato)
+  if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
+    const { verifyRecaptchaToken } = await import('../utils/recaptcha');
+    const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'login');
+    
+    if (!recaptchaResult.success) {
+      console.log('❌ reCAPTCHA failed:', recaptchaResult.error);
+      return { error: "Verifica di sicurezza fallita. Riprova." }
+    }
+    
+    console.log('✅ reCAPTCHA passed - Score:', recaptchaResult.score);
+  }
 
   // 1. Fai il login
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -102,13 +131,27 @@ export async function login(formData: FormData) {
   }
 }
 
-// --- RECUPERO PASSWORD: Passo 1 - Richiesta Reset ---
+// --- RECUPERO PASSWORD: Passo 1 - Richiesta Reset CON RECAPTCHA ---
 export async function forgotPassword(formData: FormData) {
   const supabase = await createClient()
   const email = formData.get("email") as string
+  const recaptchaToken = formData.get("recaptchaToken") as string
   
   if (!email) {
     return { error: "Email richiesta" }
+  }
+
+  // 0. Verifica reCAPTCHA (se configurato)
+  if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
+    const { verifyRecaptchaToken } = await import('../utils/recaptcha');
+    const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'forgot_password');
+    
+    if (!recaptchaResult.success) {
+      console.log('❌ reCAPTCHA failed:', recaptchaResult.error);
+      return { error: "Verifica di sicurezza fallita. Riprova." }
+    }
+    
+    console.log('✅ reCAPTCHA passed - Score:', recaptchaResult.score);
   }
 
   const origin = (await headers()).get("origin")
