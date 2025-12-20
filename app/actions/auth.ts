@@ -59,7 +59,7 @@ export async function signup(formData: any) {
 
   if (profileError) {
     console.error("Errore salvataggio profilo:", profileError)
-    return { error: "Registrazione riuscita ma errore nel profilo: " + profileError.message }
+    return { error: "Errore salvataggio profilo: " + profileError.message }
   }
 
   return { success: true }
