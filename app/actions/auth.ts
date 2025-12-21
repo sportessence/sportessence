@@ -135,39 +135,31 @@ export async function login(formData: FormData) {
 export async function forgotPassword(formData: FormData) {
   const supabase = await createClient()
   const email = formData.get("email") as string
-  const recaptchaToken = formData.get("recaptchaToken") as string
   
   if (!email) {
     return { error: "Email richiesta" }
   }
 
-  // 0. Verifica reCAPTCHA (se configurato)
-  if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
-    const { verifyRecaptchaToken } = await import('../utils/recaptcha');
-    const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'forgot_password');
-    
-    if (!recaptchaResult.success) {
-      console.log('❌ reCAPTCHA failed:', recaptchaResult.error);
-      return { error: "Verifica di sicurezza fallita. Riprova." }
-    }
-    
-    console.log('✅ reCAPTCHA passed - Score:', recaptchaResult.score);
-  }
-
-  const origin = (await headers()).get("origin")
+  const origin = (await headers()).get("origin") || 'http://localhost:3000'
+  
+  // ✅ URL completo e più esplicito per il reset password
+  const redirectUrl = `${origin}/auth/callback?next=/ResetPassword`
+  
+  console.log("📧 Sending password reset email to:", email)
+  console.log("🔗 Redirect URL:", redirectUrl)
+  console.log("🌍 Origin:", origin)
 
   // Invia email con link per reset
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=/ResetPassword`,
+    redirectTo: redirectUrl,
   })
 
   if (error) {
-    console.error("Errore reset password:", error.message)
-    // ⚠️ IMPORTANTE: Non rivelare se l'email esiste o no (sicurezza)
-    // Ritorna sempre success anche se email non esiste
+    console.error("❌ Errore reset password:", error.message, error)
     return { success: true }
   }
 
+  console.log("✅ Password reset email sent successfully")
   return { success: true }
 }
 

@@ -5,7 +5,6 @@ import "./globals.css";
 
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
-import CookieBanner from "./components/cookieBanner";
 import { createClient } from "./utils/supabase/server";
 
 const montserrat = Montserrat({
@@ -67,19 +66,21 @@ export default async function RootLayout({
   const initialRole = await getUserRole();
 
   return (
-    <html lang="it">
+    <html lang="it" className="scroll-smooth">
       <body
-        className={`${montserrat.className} bg-gray-50 min-h-screen flex flex-col`}
+        className={`${montserrat.className} bg-gray-50 min-h-screen flex flex-col overflow-x-hidden`}
         suppressHydrationWarning={true}
       >
+        {/* Navbar sticky - sempre visibile in cima */}
         <Navbar initialRole={initialRole} />
 
-        <main className="flex-grow">{children}</main>
+        {/* Main content - il flex-grow fa sì che occupi tutto lo spazio disponibile */}
+        <main className="flex-grow">
+          {children}
+        </main>
 
+        {/* Footer */}
         <Footer />
-        
-        {/* ✅ Cookie Banner - Appare solo se necessario */}
-        <CookieBanner />
       </body>
     </html>
   );
