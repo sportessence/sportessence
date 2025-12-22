@@ -114,8 +114,8 @@ export default function Navbar({ initialRole }: NavbarProps) {
   };
 
   return (
-<nav className="bg-blue-light fixed w-full top-0 z-50 shadow-md"> 
-       <div className="max-w-7xl mx-auto py-2 px-4 h-auto flex justify-between items-center">
+    <nav className="bg-blue-light fixed top-0 w-full z-50 shadow-md">
+      <div className="max-w-7xl mx-auto py-2 px-4 h-auto flex justify-between items-center">
         <Link 
           href={role === "admin" ? "/admin/Dashboard" : "/"} 
           className="flex items-center"

@@ -3,7 +3,7 @@
 import { createClient } from '../utils/supabase/server'
 import { headers } from "next/headers"
 
-// --- REGISTRAZIONE CON RECAPTCHA ---
+// --- REGISTRAZIONE CON OTP PER CONFERMA ---
 export async function signup(formData: any) {
   const supabase = await createClient()
   
@@ -19,30 +19,18 @@ export async function signup(formData: any) {
     civico,
     cap,
     paese,
-    provincia,
-    recaptchaToken
+    provincia
   } = formData
 
-  // 0. Verifica reCAPTCHA (se configurato)
-  if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
-    const { verifyRecaptchaToken } = await import('../utils/recaptcha');
-    const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'signup');
-    
-    if (!recaptchaResult.success) {
-      console.log('❌ reCAPTCHA failed:', recaptchaResult.error);
-      return { error: "Verifica di sicurezza fallita. Riprova." }
-    }
-    
-    // Log dello score per monitoraggio
-    console.log('✅ reCAPTCHA passed - Score:', recaptchaResult.score);
-  }
-
-  // 1. Crea utente auth
+  // ✅ NUOVO: Crea utente SENZA auto-conferma
+  // L'utente dovrà inserire il codice OTP per confermare
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${(await headers()).get("origin")}/auth/callback`,
+      // ⚠️ NON usiamo emailRedirectTo perché non vogliamo link!
+      // Supabase invierà automaticamente un OTP alla email
+      emailRedirectTo: undefined,
     }
   })
 
@@ -54,7 +42,7 @@ export async function signup(formData: any) {
     return { error: "Errore sconosciuto durante la creazione utente." }
   }
 
-  // 2. Crea profilo
+  // Crea profilo (sarà accessibile solo dopo conferma OTP)
   const { error: profileError } = await supabase
     .from('profiles')
     .insert({
@@ -77,31 +65,49 @@ export async function signup(formData: any) {
     return { error: "Registrazione riuscita ma errore nel profilo: " + profileError.message }
   }
 
+  return { 
+    success: true,
+    needsVerification: true, // Indica che serve verifica OTP
+    email: email
+  }
+}
+
+// --- VERIFICA OTP DOPO REGISTRAZIONE ---
+export async function verifySignupOTP(formData: FormData) {
+  const supabase = await createClient()
+  const email = formData.get('email') as string
+  const token = formData.get('token') as string
+
+  if (!email || !token) {
+    return { error: "Email e codice richiesti" }
+  }
+
+  // Verifica il codice OTP
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'signup' // ⚠️ IMPORTANTE: tipo 'signup' per conferma registrazione
+  })
+
+  if (error) {
+    return { error: "Codice non valido o scaduto" }
+  }
+
+  if (!data.user) {
+    return { error: "Errore durante la verifica" }
+  }
+
   return { success: true }
 }
 
-// --- LOGIN CON RUOLO E RECAPTCHA ---
+// --- LOGIN NORMALE CON PASSWORD (non cambia!) ---
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const recaptchaToken = formData.get('recaptchaToken') as string
 
-  // 0. Verifica reCAPTCHA (se configurato)
-  if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
-    const { verifyRecaptchaToken } = await import('../utils/recaptcha');
-    const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'login');
-    
-    if (!recaptchaResult.success) {
-      console.log('❌ reCAPTCHA failed:', recaptchaResult.error);
-      return { error: "Verifica di sicurezza fallita. Riprova." }
-    }
-    
-    console.log('✅ reCAPTCHA passed - Score:', recaptchaResult.score);
-  }
-
-  // 1. Fai il login
+  // Login normale con password
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -115,7 +121,7 @@ export async function login(formData: FormData) {
     return { error: "Errore durante il login" }
   }
 
-  // 2. Controlla se l'utente è un admin
+  // Controlla se è admin
   const { data: adminRow } = await supabase
     .from('admins_whitelist')
     .select('id')
@@ -124,98 +130,67 @@ export async function login(formData: FormData) {
 
   const isAdmin = !!adminRow
 
-  // 3. Ritorna il ruolo (il client farà redirect)
   return { 
     success: true, 
     role: isAdmin ? 'admin' : 'user' as 'admin' | 'user'
   }
 }
 
-// --- RECUPERO PASSWORD: Passo 1 - Richiesta Reset CON RECAPTCHA ---
-// Versione con LOGGING ESTESO per debug
+// --- RESET PASSWORD: Step 1 - Richiedi OTP ---
 export async function forgotPassword(formData: FormData) {
-  console.log('🔵 === INIZIO FORGOT PASSWORD ===')
-  
   const supabase = await createClient()
-  console.log('✅ Supabase client creato')
-  
   const email = formData.get("email") as string
-  console.log('📧 Email ricevuta:', email)
   
   if (!email) {
-    console.log('❌ Email mancante')
     return { error: "Email richiesta" }
   }
 
-  const origin = (await headers()).get("origin") || 'http://localhost:3000'
-  console.log('🌍 Origin:', origin)
-  
-  const redirectUrl = `${origin}/auth/callback?next=/ResetPassword`
-  console.log('🔗 Redirect URL:', redirectUrl)
+  // ✅ NUOVO: Usa OTP invece di link
+  // Questo invierà un codice a 6 cifre via email
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: undefined, // ⚠️ NON usiamo redirect, vogliamo solo OTP
+  })
 
-  console.log('📤 Chiamata a Supabase resetPasswordForEmail...')
-  
-  try {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl,
-    })
-
-    console.log('📥 Risposta Supabase:', {
-      data,
-      error,
-      hasError: !!error
-    })
-
-    if (error) {
-      console.error('❌ ERRORE SUPABASE:', {
-        message: error.message,
-        status: error.status,
-        name: error.name,
-        // @ts-ignore
-        code: error.code,
-        details: error
-      })
-      
-      // Log dettagliato dell'errore
-      console.error('❌ Errore completo:', JSON.stringify(error, null, 2))
-      
-      // Ritorna sempre success per sicurezza (non rivelare se email esiste)
-      return { success: true }
-    }
-
-    console.log('✅ Email inviata con successo!')
-    console.log('📊 Data risposta:', data)
-    console.log('🔵 === FINE FORGOT PASSWORD ===')
-    
-    return { success: true }
-    
-  } catch (err) {
-    console.error('💥 ECCEZIONE CAUGHT:', err)
-    console.error('💥 Stack trace:', (err as Error).stack)
-    return { success: true }
+  if (error) {
+    console.error("Errore invio OTP reset:", error.message)
+    return { success: true } // Non rivelare se email esiste
   }
+
+  return { success: true }
 }
 
-// --- RECUPERO PASSWORD: Passo 2 - Aggiorna Password ---
-export async function updatePassword(formData: FormData) {
+// --- RESET PASSWORD: Step 2 - Verifica OTP e Cambia Password ---
+export async function verifyOTPAndResetPassword(formData: FormData) {
   const supabase = await createClient()
-  const password = formData.get("password") as string
+  const email = formData.get('email') as string
+  const token = formData.get('token') as string
+  const password = formData.get('password') as string
 
-  if (!password) {
-    return { error: "Password richiesta" }
+  if (!email || !token || !password) {
+    return { error: "Tutti i campi sono richiesti" }
   }
 
   if (password.length < 8) {
     return { error: "La password deve essere di almeno 8 caratteri" }
   }
 
-  // Aggiorna password dell'utente corrente
-  const { error } = await supabase.auth.updateUser({
+  // 1. Verifica OTP
+  const { data, error: verifyError } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'recovery' // ⚠️ IMPORTANTE: tipo 'recovery' per reset password
+  })
+
+  if (verifyError || !data.session) {
+    return { error: "Codice non valido o scaduto" }
+  }
+
+  // 2. Aggiorna password
+  const { error: updateError } = await supabase.auth.updateUser({
     password: password,
   })
 
-  if (error) {
-    console.error("Errore aggiornamento password:", error)
+  if (updateError) {
     return { error: "Errore durante l'aggiornamento della password" }
   }
 
