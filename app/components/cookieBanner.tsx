@@ -41,7 +41,7 @@ export default function CookieBanner() {
               (autenticazione e preferenze). Non utilizziamo cookie di profilazione
               o tracking. Per potersi registrare bisogna accettarli{" "}
               <Link
-                href="/privacy"
+                href="/Privacy"
                 className="text-cyan-600 underline hover:text-cyan-700 font-semibold"
               >
                 Leggi l'informativa completa

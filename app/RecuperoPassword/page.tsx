@@ -2,30 +2,30 @@
 
 import { useState, useEffect } from "react";
 import { forgotPassword } from "@/app/actions/auth";
-import { executeRecaptcha } from "@/app/utils/recaptcha";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export default function RecuperoPassword() {
+  const searchParams = useSearchParams();
+  const errorFromUrl = searchParams.get('error');
+  
   const [form, setForm] = useState({ email: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(errorFromUrl);
   const [alertType, setAlertType] = useState<"error" | "success">("error");
-  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
 
   useEffect(() => {
-    // Carica reCAPTCHA quando il componente monta
-    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-    if (siteKey) {
-      const script = document.createElement('script');
-      script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setRecaptchaLoaded(true);
-      document.head.appendChild(script);
-    } else {
-      setRecaptchaLoaded(true); // Continua senza reCAPTCHA se non configurato
+    // Se c'è un errore nell'URL, mostralo
+    if (errorFromUrl) {
+      setAlertMsg(decodeURIComponent(errorFromUrl));
+      setAlertType("error");
+      
+      // Rimuovi l'errore dall'URL dopo 8 secondi
+      setTimeout(() => {
+        window.history.replaceState({}, '', '/RecuperoPassword');
+      }, 8000);
     }
-  }, []);
+  }, [errorFromUrl]);
 
   const showAlert = (msg: string, type: "error" | "success" = "error") => {
     setAlertMsg(msg);
@@ -44,23 +44,8 @@ export default function RecuperoPassword() {
     }
 
     try {
-      // 1. Esegui reCAPTCHA (se configurato)
-      let recaptchaToken = null;
-      if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
-        recaptchaToken = await executeRecaptcha('forgot_password');
-        if (!recaptchaToken) {
-          showAlert("Errore verifica di sicurezza. Riprova.");
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
-      // 2. Prepara FormData
       const formData = new FormData();
       formData.append("email", form.email);
-      if (recaptchaToken) {
-        formData.append("recaptchaToken", recaptchaToken);
-      }
 
       const result = await forgotPassword(formData);
 
@@ -68,7 +53,7 @@ export default function RecuperoPassword() {
         showAlert(result.error);
       } else {
         showAlert(
-          "Se hai un account registrato con questa email, riceverai un messaggio a breve con le istruzioni per il recupero password. Controlla anche la cartella spam.",
+          "✅ Email inviata! Se hai un account registrato, riceverai un messaggio a breve. Controlla anche la cartella spam. Il link è valido per 1 ora.",
           "success"
         );
         setForm({ email: "" });
@@ -93,7 +78,7 @@ export default function RecuperoPassword() {
       {/* ALERT */}
       {alertMsg && (
         <div
-          className={`fixed z-50 top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-lg font-semibold shadow-lg ${
+          className={`fixed z-50 top-4 left-1/2 -translate-x-1/2 px-6 py-4 rounded-lg font-semibold shadow-lg max-w-md text-center ${
             alertType === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
           }`}
         >
@@ -124,17 +109,13 @@ export default function RecuperoPassword() {
 
           <button
             type="submit"
-            disabled={isSubmitting || !recaptchaLoaded}
+            disabled={isSubmitting}
             className={`w-full bg-cyan-600 text-white py-3 rounded-lg shadow-md 
               hover:-translate-y-1 hover:shadow-xl hover:bg-cyan-700 hover:cursor-pointer
               transition-all duration-300 ease-out font-semibold
-              ${isSubmitting || !recaptchaLoaded ? "opacity-60 cursor-not-allowed" : ""}`}
+              ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""}`}
           >
-            {isSubmitting
-              ? "Invio in corso..."
-              : !recaptchaLoaded
-              ? "Caricamento..."
-              : "Invia Email di Recupero"}
+            {isSubmitting ? "Invio in corso..." : "Invia Email di Recupero"}
           </button>
         </form>
 
@@ -159,38 +140,16 @@ export default function RecuperoPassword() {
           <ol className="list-decimal list-inside space-y-1 text-xs">
             <li>Inserisci la tua email e clicca su "Invia"</li>
             <li>Riceverai un'email con un link</li>
-            <li>Clicca sul link nell'email</li>
+            <li>Clicca sul link nell'email entro 1 ora</li>
             <li>Imposta la tua nuova password</li>
           </ol>
+          <p className="mt-3 text-xs text-red-600 font-semibold">
+            ⚠️ Se ricevi un errore "link scaduto", richiedi un nuovo link da questa pagina.
+          </p>
           <p className="mt-2 text-xs text-gray-600">
             ⏱️ Il link è valido per 1 ora
           </p>
         </div>
-
-        {/* reCAPTCHA Badge Info */}
-        {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
-          <p className="text-xs text-gray-500 text-center mt-6">
-            Questo sito è protetto da reCAPTCHA e si applicano la{" "}
-            <a
-              href="https://policies.google.com/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              Privacy Policy
-            </a>{" "}
-            e i{" "}
-            <a
-              href="https://policies.google.com/terms"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              Termini di Servizio
-            </a>{" "}
-            di Google.
-          </p>
-        )}
       </div>
     </main>
   );

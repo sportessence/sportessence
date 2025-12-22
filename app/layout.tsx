@@ -74,8 +74,8 @@ export default async function RootLayout({
         {/* Navbar sticky - sempre visibile in cima */}
         <Navbar initialRole={initialRole} />
 
+        <main className="flex-grow mt-20  ">
         {/* Main content - il flex-grow fa sì che occupi tutto lo spazio disponibile */}
-        <main className="flex-grow">
           {children}
         </main>
 

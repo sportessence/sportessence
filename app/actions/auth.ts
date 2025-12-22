@@ -132,35 +132,68 @@ export async function login(formData: FormData) {
 }
 
 // --- RECUPERO PASSWORD: Passo 1 - Richiesta Reset CON RECAPTCHA ---
+// Versione con LOGGING ESTESO per debug
 export async function forgotPassword(formData: FormData) {
+  console.log('🔵 === INIZIO FORGOT PASSWORD ===')
+  
   const supabase = await createClient()
+  console.log('✅ Supabase client creato')
+  
   const email = formData.get("email") as string
+  console.log('📧 Email ricevuta:', email)
   
   if (!email) {
+    console.log('❌ Email mancante')
     return { error: "Email richiesta" }
   }
 
   const origin = (await headers()).get("origin") || 'http://localhost:3000'
+  console.log('🌍 Origin:', origin)
   
-  // ✅ URL completo e più esplicito per il reset password
   const redirectUrl = `${origin}/auth/callback?next=/ResetPassword`
+  console.log('🔗 Redirect URL:', redirectUrl)
+
+  console.log('📤 Chiamata a Supabase resetPasswordForEmail...')
   
-  console.log("📧 Sending password reset email to:", email)
-  console.log("🔗 Redirect URL:", redirectUrl)
-  console.log("🌍 Origin:", origin)
+  try {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl,
+    })
 
-  // Invia email con link per reset
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: redirectUrl,
-  })
+    console.log('📥 Risposta Supabase:', {
+      data,
+      error,
+      hasError: !!error
+    })
 
-  if (error) {
-    console.error("❌ Errore reset password:", error.message, error)
+    if (error) {
+      console.error('❌ ERRORE SUPABASE:', {
+        message: error.message,
+        status: error.status,
+        name: error.name,
+        // @ts-ignore
+        code: error.code,
+        details: error
+      })
+      
+      // Log dettagliato dell'errore
+      console.error('❌ Errore completo:', JSON.stringify(error, null, 2))
+      
+      // Ritorna sempre success per sicurezza (non rivelare se email esiste)
+      return { success: true }
+    }
+
+    console.log('✅ Email inviata con successo!')
+    console.log('📊 Data risposta:', data)
+    console.log('🔵 === FINE FORGOT PASSWORD ===')
+    
+    return { success: true }
+    
+  } catch (err) {
+    console.error('💥 ECCEZIONE CAUGHT:', err)
+    console.error('💥 Stack trace:', (err as Error).stack)
     return { success: true }
   }
-
-  console.log("✅ Password reset email sent successfully")
-  return { success: true }
 }
 
 // --- RECUPERO PASSWORD: Passo 2 - Aggiorna Password ---
