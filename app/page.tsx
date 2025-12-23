@@ -1,38 +1,23 @@
 
-   import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import AttivitaSlider from "@/app/components/attivitaSlider";
 import TestimonianzeSlider from "@/app/components/testimonianzeSlider";
-import prova from "@/public/imgs/hero.jpg";
+import Hero from "@/public/imgs/immagineHome.jpeg";
 
 export default function Home() {
   return (
     <main className="bg-cream text-blue-deep">
       {/* HERO */}
-      <section className="relative h-screen overflow-hidden">
+<section className="relative h-screen overflow-hidden">
         <Image
-          src={prova}
+          src={Hero}
           alt="Bambini che giocano al campo estivo"
           fill
           priority
           className="object-cover object-center"
         />
-        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-          <div className="text-center text-white font-bold px-6 md:px-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Vivi un'estate indimenticabile!
-            </h1>
-            <p className="text-lg mb-6">
-              Scopri i nostri campi estivi per bambini e ragazzi dai 6 ai 21 anni.
-            </p>
-            <Link
-              href="/About"
-              className="bg-cyan-600 text-white py-3 px-6 rounded-lg shadow-lg hover:text-cyan-600 hover:bg-white transition duration-300"
-            >
-              Scopri i Campi
-            </Link>
-          </div>
-        </div>
+    
       </section>
 
       {/* CHI SIAMO */}
