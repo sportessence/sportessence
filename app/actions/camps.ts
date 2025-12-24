@@ -14,8 +14,8 @@ export type CampData = {
   data_inizio: string
   data_fine: string
   descrizione?: string
-  posti_disponibili?: number
   prezzo?: number
+  attivo?: boolean
 }
 
 // --- GET TUTTI I CAMPI ---
@@ -114,7 +114,7 @@ export async function updateCamp(id: string, campData: Partial<CampData>) {
     return { error: 'Non autorizzato' }
   }
 
-  // Aggiorna il campo
+  // Aggiorna il campo (la disattivazione è sempre possibile)
   const { data, error } = await supabase
     .from('camps')
     .update(campData)

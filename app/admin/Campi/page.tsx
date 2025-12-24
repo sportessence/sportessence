@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/app/utils/supabase/client";
-import { Plus, Edit2, Trash2, X, Calendar, MapPin, Users, Euro } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Calendar, MapPin, Euro, CheckCircle, XCircle } from "lucide-react";
 import { createCamp, updateCamp, deleteCamp, type CampData } from "@/app/actions/camps";
 
 type Camp = {
@@ -16,8 +16,8 @@ type Camp = {
   data_inizio: string;
   data_fine: string;
   descrizione?: string;
-  posti_disponibili?: number;
   prezzo?: number;
+  attivo: boolean;
   created_at: string;
 };
 
@@ -39,8 +39,8 @@ export default function AdminCampiPage() {
     data_inizio: "",
     data_fine: "",
     descrizione: "",
-    posti_disponibili: undefined,
     prezzo: undefined,
+    attivo: true,
   });
 
   const supabase = createClient();
@@ -83,8 +83,8 @@ export default function AdminCampiPage() {
         data_inizio: camp.data_inizio,
         data_fine: camp.data_fine,
         descrizione: camp.descrizione || "",
-        posti_disponibili: camp.posti_disponibili,
         prezzo: camp.prezzo,
+        attivo: camp.attivo,
       });
     } else {
       setEditingCamp(null);
@@ -98,8 +98,8 @@ export default function AdminCampiPage() {
         data_inizio: "",
         data_fine: "",
         descrizione: "",
-        posti_disponibili: undefined,
         prezzo: undefined,
+        attivo: true,
       });
     }
     setShowModal(true);
@@ -146,6 +146,35 @@ export default function AdminCampiPage() {
       showAlert("Errore durante l'operazione", "error");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleAttivo = async (camp: Camp) => {
+    const nuovoStato = !camp.attivo;
+    const azione = nuovoStato ? "attivare" : "disattivare";
+    
+    const confirmed = window.confirm(
+      `Sei sicuro di voler ${azione} il campo "${camp.nome}"?\n\n${
+        nuovoStato 
+          ? "Il campo tornerà ad accettare iscrizioni." 
+          : "Il campo non accetterà più nuove iscrizioni, ma le iscrizioni esistenti rimarranno attive."
+      }`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const result = await updateCamp(camp.id, { attivo: nuovoStato });
+
+      if (result.error) {
+        showAlert(result.error, "error");
+      } else {
+        showAlert(`Campo ${nuovoStato ? "attivato" : "disattivato"} con successo`, "success");
+        loadCamps();
+      }
+    } catch (error) {
+      console.error("Errore toggle attivo:", error);
+      showAlert("Errore durante l'operazione", "error");
     }
   };
 
@@ -230,9 +259,24 @@ export default function AdminCampiPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {camps.map((camp) => (
               <div key={camp.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-cyan-600 to-blue-500 p-6 text-white">
-                  <h3 className="text-xl font-bold mb-2">{camp.nome}</h3>
+                {/* Header con stato */}
+                <div className="bg-blue-light p-6 text-white relative">
+                  {/* Badge stato */}
+                  <div className="absolute top-3 right-3">
+                    {camp.attivo ? (
+                      <span className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                        <CheckCircle size={14} />
+                        Attivo
+                      </span>
+                    ) : (
+                      <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                        <XCircle size={14} />
+                        Disattivo
+                      </span>
+                    )}
+                  </div>
+                  
+                  <h3 className="text-xl font-bold mb-2 pr-20">{camp.nome}</h3>
                   <div className="flex items-center gap-2 text-sm">
                     <MapPin size={16} />
                     <span>
@@ -253,24 +297,13 @@ export default function AdminCampiPage() {
                     </div>
                   </div>
 
-                  {/* Posti */}
-                  {camp.posti_disponibili !== null && camp.posti_disponibili !== undefined && (
-                    <div className="flex items-center gap-3 mb-3">
-                      <Users className="text-cyan-600 flex-shrink-0" size={18} />
-                      <div className="text-sm">
-                        <span className="text-gray-600">Posti: </span>
-                        <span className="font-semibold">{camp.posti_disponibili}</span>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Prezzo */}
                   {camp.prezzo && (
                     <div className="flex items-center gap-3 mb-4">
                       <Euro className="text-cyan-600 flex-shrink-0" size={18} />
                       <div className="text-sm">
                         <span className="text-gray-600">Prezzo: </span>
-                        <span className="font-bold">€{camp.prezzo.toFixed(2)}</span>
+                        <span className="font-bold text-green-600">€{camp.prezzo.toFixed(2)}</span>
                       </div>
                     </div>
                   )}
@@ -281,23 +314,47 @@ export default function AdminCampiPage() {
                   )}
 
                   {/* Azioni */}
-                  <div className="flex gap-2">
+                  <div className="space-y-2">
+                    {/* Toggle Attivo/Disattivo */}
                     <button
-                      onClick={() => handleOpenModal(camp)}
-                      className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 
-                        transition-all flex items-center justify-center gap-2 font-semibold"
+                      onClick={() => handleToggleAttivo(camp)}
+                      className={`w-full py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold ${
+                        camp.attivo
+                          ? "bg-orange-500 text-white hover:bg-orange-600"
+                          : "bg-green-500 text-white hover:bg-green-600"
+                      }`}
                     >
-                      <Edit2 size={16} />
-                      Modifica
-                    </button>ò hover:
-                    <button
-                      onClick={() => handleDelete(camp)}
-                      className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 
-                        transition-all flex items-center justify-center gap-2 font-semibold"
-                    >
-                      <Trash2 size={16} />
-                      Elimina
+                      {camp.attivo ? (
+                        <>
+                          <XCircle size={16} />
+                          Disattiva Campo
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={16} />
+                          Attiva Campo
+                        </>
+                      )}
                     </button>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleOpenModal(camp)}
+                        className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 
+                          transition-all flex items-center justify-center gap-2 font-semibold"
+                      >
+                        <Edit2 size={16} />
+                        Modifica
+                      </button>
+                      <button
+                        onClick={() => handleDelete(camp)}
+                        className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 
+                          transition-all flex items-center justify-center gap-2 font-semibold"
+                      >
+                        <Trash2 size={16} />
+                        Elimina
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -432,43 +489,28 @@ export default function AdminCampiPage() {
                 </div>
               </div>
 
-              {/* Posti e Prezzo */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-blue-deep font-semibold mb-1">
-                    Posti Disponibili
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.posti_disponibili || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        posti_disponibili: e.target.value ? parseInt(e.target.value) : undefined,
-                      })
-                    }
-                    min="0"
-                    placeholder="50"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block text-blue-deep font-semibold mb-1">Prezzo (€)</label>
-                  <input
-                    type="number"
-                    value={formData.prezzo || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        prezzo: e.target.value ? parseFloat(e.target.value) : undefined,
-                      })
-                    }
-                    min="0"
-                    step="0.01"
-                    placeholder="200.00"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
-                  />
-                </div>
+              {/* Prezzo */}
+              <div>
+                <label className="block text-blue-deep font-semibold mb-1">
+                  Prezzo Indicativo (€)
+                </label>
+                <input
+                  type="number"
+                  value={formData.prezzo || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      prezzo: e.target.value ? parseFloat(e.target.value) : undefined,
+                    })
+                  }
+                  min="0"
+                  step="0.01"
+                  placeholder="200.00"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Prezzo indicativo per settimana (opzionale)
+                </p>
               </div>
 
               {/* Descrizione */}
@@ -481,6 +523,28 @@ export default function AdminCampiPage() {
                   placeholder="Descrivi il campo estivo, le attività previste, ecc..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black resize-none"
                 />
+              </div>
+
+              {/* Toggle Attivo */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <p className="text-blue-deep font-semibold">Campo Attivo</p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Se disattivato, il campo non accetterà nuove iscrizioni
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={formData.attivo}
+                      onChange={(e) => setFormData({ ...formData, attivo: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-14 h-7 bg-gray-300 rounded-full peer peer-checked:bg-green-500 transition-colors"></div>
+                    <div className="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-7"></div>
+                  </div>
+                </label>
               </div>
 
               {/* Pulsanti */}

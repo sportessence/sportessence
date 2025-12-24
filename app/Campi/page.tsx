@@ -1,6 +1,6 @@
 import { createClient } from "@/app/utils/supabase/server";
 import Link from "next/link";
-import { Calendar, MapPin, Users, Mail } from "lucide-react";
+import { Calendar, MapPin, Users, Mail, XCircle } from "lucide-react";
 
 // Disabilita cache
 export const dynamic = 'force-dynamic';
@@ -13,7 +13,7 @@ export default async function CampiPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
 
-  // Recupera tutti i campi
+  // Recupera tutti i campi (anche quelli disattivati)
   const { data: camps, error } = await supabase
     .from('camps')
     .select('*')
@@ -38,7 +38,7 @@ export default async function CampiPage() {
         <img
           src="/imgs/sfondoRegistrazione.jpg"
           alt="Sfondo"
-          className="w-full h-full object-cover opacity-30"
+          className="w-full h-full object-cover opacity-10"
         />
       </div>
 
@@ -56,6 +56,102 @@ export default async function CampiPage() {
           </div>
         </section>
 
+      {/* Sezione Descrizione Generale Campi */}
+<section className="pt-20 px-6">
+  <div className="max-w-7xl mx-auto space-y-20">
+
+    {/* Intro */}
+    <div className="text-center max-w-3xl mx-auto">
+      <h2 className="text-3xl md:text-4xl font-bold text-blue-deep mb-6">
+        Molto più di un campo estivo
+      </h2>
+      <p className="text-gray-700 text-lg leading-relaxed">
+        I nostri campi estivi sportivi sono pensati per offrire ai bambini e ai ragazzi
+        un'esperienza completa fatta di movimento, gioco e socialità.
+        Ogni giornata è strutturata per garantire divertimento, sicurezza e crescita personale,
+        seguiti da istruttori qualificati.
+      </p>
+    </div>
+
+    {/* Attività */}
+    <div className="grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <h3 className="text-2xl font-bold text-blue-deep mb-4">
+          Sport, gioco e movimento ogni giorno
+        </h3>
+        <ul className="space-y-4 text-gray-700 text-lg">
+          <li className="flex items-start gap-3">
+            <span>⚽</span>
+            Attività multisportive e giochi di squadra
+          </li>
+          <li className="flex items-start gap-3">
+            <span>🏃‍♂️</span>
+            Esercizi motori adatti all'età e alle capacità di ciascuno
+          </li>
+          <li className="flex items-start gap-3">
+            <span>🤝</span>
+            Socializzazione e rispetto delle regole
+          </li>
+          <li className="flex items-start gap-3">
+            <span>🧑‍🏫</span>
+            Educatori e istruttori sempre presenti
+          </li>
+        </ul>
+      </div>
+
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8">
+        <h4 className="text-xl font-bold text-blue-deep mb-4">
+          La giornata tipo
+        </h4>
+        <ul className="space-y-4 text-gray-700">
+          <li>
+            <span className="font-semibold">Accoglienza e riscaldamento</span><br />
+            Attività leggere per iniziare la giornata nel modo giusto.
+          </li>
+          <li>
+            <span className="font-semibold">Attività sportive e giochi organizzati</span><br />
+            Sport, tornei e giochi di gruppo.
+          </li>
+          <li>
+            <span className="font-semibold">Pausa e pranzo</span><br />
+            Momento di recupero e socializzazione.
+          </li>
+          <li>
+            <span className="font-semibold">Attività pomeridiane e rientro</span><br />
+            Giochi più leggeri e conclusione della giornata.
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    {/* Dove siamo */}
+    <div className="text-center max-w-4xl mx-auto bg-blue-light 
+      rounded-2xl p-10 shadow-lg">
+      <h3 className="text-2xl font-bold text-white mb-4">
+        Più sedi nel territorio comasco
+      </h3>
+      <p className="text-white font-semi-bold text-lg leading-relaxed">
+        I nostri campi estivi sono attivi in diverse sedi nel territorio comasco,
+        per offrire alle famiglie una soluzione comoda e facilmente raggiungibile.
+        Ogni struttura è selezionata per garantire spazi adeguati, sicurezza e qualità.
+      </p>
+    </div>
+
+    {/* CTA */}
+    <div className="text-center">
+      <h3 className="text-2xl font-bold text-blue-deep mb-4">
+        Scegli il campo più adatto a te
+      </h3>
+      <p className="text-gray-600 text-lg">
+        Scopri qui sotto date, sedi e disponibilità dei nostri campi estivi.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+
+
         {/* Campi disponibili */}
         <section className="py-16 px-6">
           <div className="max-w-7xl mx-auto">
@@ -70,18 +166,23 @@ export default async function CampiPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:w-230 lg:mx-auto gap-8">
                 {camps.map((camp) => {
                   const postiEsauriti = camp.posti_disponibili !== null && 
                                        camp.posti_disponibili !== undefined && 
                                        camp.posti_disponibili === 0;
                   
+                  const campoDisattivato = !camp.attivo;
+                  const iscrizioniNonPossibili = campoDisattivato || postiEsauriti;
+                  
                   return (
                     <div 
                       key={camp.id} 
-                      className="bg-white/95  rounded-2xl shadow-xl overflow-hidden 
+                      className={`bg-white/95 rounded-2xl shadow-xl overflow-hidden 
                         hover:shadow-2xl hover:-translate-y-2 transition-all duration-300
-                        flex flex-col min-h-[520px]"
+                        flex flex-col min-h-[520px] ${
+                          campoDisattivato && isLoggedIn ? 'opacity-75' : ''
+                        }`}
                     >
                       {/* Header Card con immagine di sfondo */}
                       <div className="relative h-48 overflow-hidden">
@@ -90,7 +191,21 @@ export default async function CampiPage() {
                           alt={camp.nome}
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/90 via-cyan-600/70 to-transparent flex flex-col justify-end p-6">
+                        <div className={`absolute inset-0 bg-gradient-to-t ${
+                          campoDisattivato && isLoggedIn
+                            ? 'from-gray-700/90 via-gray-600/70' 
+                            : 'from-cyan-600/90 via-cyan-600/70'
+                        } to-transparent flex flex-col justify-end p-6`}>
+                          {/* Badge Disattivato - solo per utenti loggati */}
+                          {campoDisattivato && isLoggedIn && (
+                            <div className="absolute top-3 right-3">
+                              <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                                <XCircle size={14} />
+                                Iscrizioni Chiuse
+                              </span>
+                            </div>
+                          )}
+                          
                           <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
                             {camp.nome}
                           </h3>
@@ -105,6 +220,8 @@ export default async function CampiPage() {
 
                       {/* Body Card - flex-grow per occupare spazio */}
                       <div className="p-6 flex flex-col flex-grow">
+                        {/* Avviso Iscrizioni Chiuse - solo per utenti loggati */}
+                      
                         {/* Date - sempre presente */}
                         <div className="flex items-start gap-3 mb-4">
                           <div className="bg-cyan-50 p-2 rounded-lg">
@@ -119,34 +236,6 @@ export default async function CampiPage() {
                             </p>
                           </div>
                         </div>
-
-                        {/* Posti disponibili - solo se definito */}
-                        {camp.posti_disponibili !== null && camp.posti_disponibili !== undefined && (
-                          <div className="flex items-start gap-3 mb-4">
-                            <div className="bg-cyan-50 p-2 rounded-lg">
-                              <Users className="text-blue-light flex-shrink-0" size={20} />
-                            </div>
-                            <div className="text-sm flex-grow">
-                              <p className="font-semibold text-gray-800 mb-1">Disponibilità</p>
-                              {postiEsauriti ? (
-                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                                  <p className="text-orange-800 font-semibold mb-2">
-                                    😔 Posti esauriti
-                                  </p>
-                                  <p className="text-xs text-orange-700 leading-relaxed">
-                                    Per verificare la possibilità di partecipare, contattaci via email
-                                  </p>
-                                </div>
-                              ) : (
-                                <p className={`font-bold text-lg ${
-                                  camp.posti_disponibili > 10 ? 'text-green-600' : 'text-orange-600'
-                                }`}>
-                                  {camp.posti_disponibili} {camp.posti_disponibili === 1 ? 'posto' : 'posti'}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )}
 
                         {/* Descrizione - solo se presente */}
                         {camp.descrizione && (
@@ -173,27 +262,9 @@ export default async function CampiPage() {
                         {/* Spacer per spingere i pulsanti in basso */}
                         <div className="flex-grow"></div>
 
-                        {/* Pulsante Iscriviti / Login / Contattaci */}
-                        {postiEsauriti ? (
-                          <a
-                            href="mailto:sportessence.asd.aps@gmail.com?subject=Richiesta%20Informazioni%20Campo%20Estivo"
-                            className="flex items-center justify-center gap-2 w-full bg-orange-500 text-white 
-                              py-3 rounded-xl shadow-md hover:-translate-y-1 hover:shadow-xl 
-                              hover:bg-orange-600 transition-all duration-300 ease-out font-semibold"
-                          >
-                            <Mail size={20} />
-                            Contattaci per Info
-                          </a>
-                        ) : isLoggedIn ? (
-                          <Link
-                            href={`/Iscrizione?campo=${camp.id}`}
-                            className="block w-full bg-blue-light text-white 
-                              text-center py-3 rounded-xl shadow-md hover:-translate-y-1 hover:shadow-xl 
-                              transition-all duration-300 ease-out font-semibold"
-                          >
-                            🎉 Iscriviti Ora
-                          </Link>
-                        ) : (
+                        {/* Pulsante Iscriviti / Login / Contattaci / Disattivato */}
+                        {!isLoggedIn ? (
+                          // Utente NON loggato - vede sempre "Vai al Login" (campo attivo o disattivo)
                           <div className="space-y-2">
                             <p className="text-sm text-gray-600 text-center font-medium">
                               Accedi per iscriverti
@@ -206,6 +277,47 @@ export default async function CampiPage() {
                               Vai al Login
                             </Link>
                           </div>
+                        ) : campoDisattivato ? (
+                          // Utente loggato + campo disattivato - pulsante grigio non cliccabile
+                          <div className="space-y-2">
+                            <button
+                              disabled
+                              className="w-full bg-gray-300 text-gray-500 py-3 rounded-xl 
+                                cursor-not-allowed font-semibold opacity-60"
+                            >
+                              🚫 Iscrizioni Chiuse
+                            </button>
+                            <p className="text-xs text-gray-500 text-center">
+                              Per informazioni:{" "}
+                              <a 
+                                href="mailto:sportessence.asd.aps@gmail.com"
+                                className="text-cyan-600 hover:underline"
+                              >
+                                sportessence.asd.aps@gmail.com
+                              </a>
+                            </p>
+                          </div>
+                        ) : postiEsauriti ? (
+                          // Utente loggato + posti esauriti ma campo attivo
+                          <a
+                            href="mailto:sportessence.asd.aps@gmail.com?subject=Richiesta%20Informazioni%20Campo%20Estivo"
+                            className="flex items-center justify-center gap-2 w-full bg-orange-500 text-white 
+                              py-3 rounded-xl shadow-md hover:-translate-y-1 hover:shadow-xl 
+                              hover:bg-orange-600 transition-all duration-300 ease-out font-semibold"
+                          >
+                            <Mail size={20} />
+                            Contattaci per Info
+                          </a>
+                        ) : (
+                          // Utente loggato + campo attivo - può iscriversi
+                          <Link
+                            href={`/Iscrizione?campo=${camp.id}`}
+                            className="block w-full bg-blue-light text-white 
+                              text-center py-3 rounded-xl shadow-md hover:-translate-y-1 hover:shadow-xl 
+                              transition-all duration-300 ease-out font-semibold"
+                          >
+                            🎉 Iscriviti Ora
+                          </Link>
                         )}
                       </div>
                     </div>
