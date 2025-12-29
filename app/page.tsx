@@ -1,64 +1,76 @@
-
 import Image from "next/image";
 import Link from "next/link";
 import AttivitaSlider from "@/app/components/attivitaSlider";
 import TestimonianzeSlider from "@/app/components/testimonianzeSlider";
-import Hero from "@/public/imgs/immagineHome.jpeg";
+import prova from "@/public/imgs/immagineHome.jpeg";
 
 export default function Home() {
   return (
     <main className="bg-cream text-blue-deep">
-      {/* HERO */}
-<section className="relative h-screen overflow-hidden">
+      {/* HERO - Aggiunto gradient overlay più moderno */}
+      <section className="relative h-screen overflow-hidden">
         <Image
-          src={Hero}
+          src={prova}
           alt="Bambini che giocano al campo estivo"
           fill
           priority
           className="object-cover object-center"
         />
-    
       </section>
 
-      {/* CHI SIAMO */}
+      {/* CHI SIAMO - Aggiunta card con shadow e hover */}
       <section className="bg-cream py-16 px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-start items-center gap-12">
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <Image
-              src="/imgs/logoNoSfondo.png"
-              alt="Logo Azienda"
-              width={900}
-              height={900}
-              className="object-contain w-100 sm:w-100 md:w-300 lg:w-200 min-w-[350px]"
-            />
-          </div>
-          <div className="text-center md:text-left">
-            <h2 className="text-3xl font-bold mb-4 text-blue-deep">Chi Siamo</h2>
-            <p className="text-gray-700 text-lg">
-              Fondata nel XXXX, SPORTESSENCE si dedica a creare esperienze indimenticabili
-              per bambini e ragazzi. Grazie alla nostra passione per lo sport, la creatività
-              e il divertimento, ogni estate trasformiamo il gioco in apprendimento e amicizia.
-            </p>
+        <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-8 md:p-12">
+          <div className="flex flex-col md:flex-row md:items-center items-center gap-12">
+            <div className="flex flex-col items-center md:items-start gap-4">
+              <Image
+                src="/imgs/logoNoSfondo.png"
+                alt="Logo Azienda"
+                width={900}
+                height={900}
+                className="object-contain w-100 sm:w-100 md:w-300 lg:w-200 min-w-[350px]"
+              />
+            </div>
+            <div className="text-center md:text-left">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 text-blue-deep">
+                Chi Siamo
+              </h2>
+              <p className="text-gray-700 text-lg leading-relaxed">
+                Fondata nel XXXX, SPORTESSENCE si dedica a creare esperienze indimenticabili
+                per bambini e ragazzi. Grazie alla nostra passione per lo sport, la creatività
+                e il divertimento, ogni estate trasformiamo il gioco in apprendimento e amicizia.
+              </p>
+              <Link
+                href="/About"
+                className="inline-block mt-6 text-cyan-600 font-semibold hover:underline 
+                  hover:text-cyan-700 transition-colors"
+              >
+                Scopri di più su di noi →
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* MASCOTTE */}
-      <section className="bg-blue-light py-16 px-6">
+      {/* MASCOTTE - Migliorato spacing e typography */}
+      <section className="bg-blue-light py-3 px-6">
         <div className="flex flex-col md:flex-row items-center gap-12 max-w-7xl mx-auto">
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-4 md:w-1/3">
             <Image
               src="/imgs/mascotte.png"
               alt="Mascotte FIRO"
               width={400}
               height={400}
-              className="object-contain w-72 sm:w-80 md:w-96 lg:w-[400px] min-w-[200px]"
+              className="object-contain w-72 sm:w-80 md:w-96 lg:w-[250px] 
+                hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <div className="text-center md:text-left flex flex-col justify-center">
-            <h2 className="text-3xl font-bold mb-4 text-white">Ciao, sono FIRO!</h2>
-            <p className="text-white text-lg">
-              Sono FIRO, la mascotte ufficiale di SPORTESSENCE! 😄
+          <div className="text-center md:text-left flex flex-col justify-center md:w-2/3">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+              Ciao, sono FIRO! 👋
+            </h2>
+            <p className="text-white text-lg leading-relaxed">
+              Sono FIRO, la mascotte ufficiale di SPORTESSENCE! 
               Ogni anno accompagno bambini e ragazzi nelle nostre attività,
               portando allegria, curiosità e tanto divertimento. Vieni a scoprire
               con me tutte le avventure che ti aspettano ai nostri campi estivi!
@@ -70,79 +82,118 @@ export default function Home() {
       {/* COMPONENTI CLIENT */}
       <AttivitaSlider />
 
-         {/* STATISTICHE */}
-      <section className="bg-blue-light py-16">
-        <div className="mx-auto max-w-7xl px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-          {[{ label: "Statistica 1", value: "35" }, { label: "Statistica 2", value: "10.000+" }, { label: "Statistica 3", value: "50+" }, { label: "Statistica 4", value: "200+" }].map(({ label, value }) => (
-            <div key={label} className="text-center">
-              <p className="text-3xl font-bold text-white">{value}</p>
-              <p className="text-lg font-bold text-blue-deep">{label}</p>
-            </div>
-          ))}
+      {/* STATISTICHE - Aggiunto hover e animazione */}
+      <section className="bg-blue-light py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-12">
+            I Nostri Numeri
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { label: "Anni di Esperienza", value: "10" },
+              { label: "Bambini Felici", value: "10.000+" },
+              { label: "Educatori Qualificati", value: "50+" },
+              { label: "Settimane di Campo", value: "200+" }
+            ].map(({ label, value }) => (
+              <div 
+                key={label} 
+                className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-6 
+                  hover:bg-white/20 hover:scale-105 transition-all duration-300"
+              >
+                <p className="text-4xl md:text-5xl font-bold text-white mb-2">{value}</p>
+                <p className="text-base md:text-lg font-semibold text-white/90">{label}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
-
 
       <TestimonianzeSlider />
 
-      {/* FAQ + CTA */}
-      <section className="bg-cream py-16 px-6">
-        <div className="max-w-7xl mx-auto text-center md:text-left grid md:grid-cols-2 gap-12 items-center">
-          <div className="flex flex-col justify-center items-center">
+      {/* FAQ + CTA - Migliorato layout e contrasti */}
+      <section className="bg-cream py-20 px-6">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-stretch">
+          
+          {/* FAQ Card */}
+          <div className="bg-white rounded-2xl shadow-lg p-8 flex flex-col">
             <h2 className="text-3xl font-bold text-blue-deep mb-4">
-              Hai domande? Abbiamo le risposte!
+              Hai domande? 🤔
             </h2>
-            <p className="text-blue-deep text-lg mb-4">
-              Consulta le nostre domande più frequenti o scopri informazioni utili
+            <p className="text-gray-700 text-lg mb-6">
+              Consulta le nostre domande più frequenti per trovare tutte le informazioni 
               su iscrizioni, attività e sicurezza.
             </p>
-            <ul className="text-blue-deep mb-4 list-disc list-inside space-y-2">
-              <li><strong>Qual è l’età minima per partecipare?</strong> Dai 6 ai 21 anni.</li>
-              <li><strong>È possibile iscriversi a metà estate?</strong> Sì, verifica i posti disponibili.</li>
-              <li><strong>Serve il certificato medico?</strong> Sì, è obbligatorio per le attività sportive.</li>
-              <li><strong>Ci sono sconti per fratelli?</strong> Certo, chiedi informazioni al momento dell’iscrizione.</li>
-              <li><strong>Come posso contattarvi?</strong> Trovi tutto nella sezione “Contatti”.</li>
+            
+            {/* FAQ Preview */}
+            <ul className="text-gray-700 mb-6 space-y-3 flex-grow">
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-600 font-bold">•</span>
+                <span><strong>Età minima?</strong> Dai 6 ai 21 anni</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-600 font-bold">•</span>
+                <span><strong>Serve certificato medico?</strong> Sì, obbligatorio</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-600 font-bold">•</span>
+                <span><strong>Sconti per fratelli?</strong> Sì, dal 10% al 15%</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-600 font-bold">•</span>
+                <span><strong>Iscrizione a metà estate?</strong> Sì, se ci sono posti</span>
+              </li>
             </ul>
+            
             <Link
-              href="/faq"
-              className="bg-cyan-600 text-white py-3 px-6 rounded-lg shadow-md 
-                hover:-translate-y-1 hover:shadow-xl transition-all duration-300 ease-out"
+              href="/Info"
+              className="w-full bg-blue-light text-white 
+                py-4 px-6 rounded-lg shadow-md text-center font-semibold text-lg
+                hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
             >
-              Scopri tutte le FAQ
+              Scopri tutte le FAQ →
             </Link>
           </div>
 
-          <div className="bg-blue-light p-8 rounded-lg text-white flex flex-col justify-center items-center">
-            <h3 className="text-2xl font-semibold mb-4">Prenota il tuo posto oggi!</h3>
-            <p className="mb-6 text-center">
-              Non perdere l’occasione di vivere un’estate indimenticabile con SPORTESSENCE. Posti limitati!
+          {/* CTA Card */}
+          <div className="bg-blue-light rounded-2xl shadow-xl 
+            p-8 text-white flex flex-col justify-center items-center text-center">
+            <div className="text-6xl mb-4">🏕️</div>
+            <h3 className="text-3xl font-bold mb-4">
+              Prenota il tuo posto oggi!
+            </h3>
+            <p className="mb-8 text-white/90 text-lg">
+              Non perdere l'occasione di vivere un'estate indimenticabile con SPORTESSENCE. 
+              <strong className="block mt-2">Posti limitati!</strong>
             </p>
             <Link
-              href="/iscrizione"
-              className="bg-white text-blue-deep py-3 px-6 rounded-lg shadow-md 
-                hover:-translate-y-1 hover:shadow-xl transition-all duration-300 ease-out"
+              href="/Iscrizione"
+              className="bg-white text-blue-deep py-4 px-8 rounded-lg shadow-lg 
+                font-bold text-lg hover:bg-cream hover:scale-105 
+                transition-all duration-300"
             >
-              Iscriviti Ora
+              Iscriviti Ora →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* SPONSOR */}
-      <section className="bg-blue-light py-12">
+      {/* SPONSOR - Aggiunto titolo e migliorato spacing */}
+      <section className="bg-blue-light py-16">
         <div className="px-6 text-center max-w-7xl mx-auto">
-          <h2 className="text-3xl font-semibold mb-6">I nostri sponsor</h2>
-          <div className="flex justify-center items-center gap-12 flex-wrap">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-8">
+            I Nostri Partner
+          </h2>
+          <div className="flex justify-center items-center gap-12 md:gap-16 flex-wrap">
             {[{
-              name: "Sponsor 1",
+              name: "ASC Sport",
               img: "https://www.ascsport.it/wp-content/themes/asc_sport/images_new/ASC-Logo.svg",
               href: "https://www.ascsport.it"
             },{
-              name: "Sponsor 2",
+              name: "Seristampa",
               img: "https://www.seristampa.promo/wp-content/uploads/2024/01/LOGO-header.png",
               href: "https://www.seristampa.promo"
             },{
-              name: "Sponsor 3",
+              name: "Centro SP",
               img: "https://centrosp.it/wp-content/uploads/2021/12/CPS-Logo-Transparent.png",
               href: "https://centrosp.it"
             }].map((sponsor) => (
@@ -150,7 +201,9 @@ export default function Home() {
                 key={sponsor.name}
                 href={sponsor.href}
                 target="_blank"
-                className="inline-block transition-transform duration-300 hover:scale-110"
+                rel="noopener noreferrer"
+                className="inline-block p-4 rounded-lg
+                  hover:shadow-xl hover:scale-110 transition-all duration-300"
               >
                 <Image
                   src={sponsor.img}
@@ -167,6 +220,3 @@ export default function Home() {
     </main>
   );
 }
-
-   
-   

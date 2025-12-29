@@ -5,6 +5,7 @@ import "./globals.css";
 
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
+import ScrollToTop from "./components/scrollToTop";
 import { createClient } from "./utils/supabase/server";
 
 const montserrat = Montserrat({
@@ -71,6 +72,7 @@ export default async function RootLayout({
         className={`${montserrat.className} bg-gray-50 min-h-screen flex flex-col overflow-x-hidden`}
         suppressHydrationWarning={true}
       >
+        <ScrollToTop />
         {/* Navbar sticky - sempre visibile in cima */}
         <Navbar initialRole={initialRole} />
 
