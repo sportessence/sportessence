@@ -7,7 +7,7 @@ import prova from "@/public/imgs/immagineHome.jpeg";
 export default function Home() {
   return (
     <main className="bg-cream text-blue-deep">
-      {/* HERO - Aggiunto gradient overlay più moderno */}
+      {/* HERO */}
       <section className="relative h-screen overflow-hidden">
         <Image
           src={prova}
@@ -18,7 +18,7 @@ export default function Home() {
         />
       </section>
 
-      {/* CHI SIAMO - Aggiunta card con shadow e hover */}
+      {/* CHI SIAMO */}
       <section className="bg-cream py-16 px-6 max-w-7xl mx-auto">
         <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-8 md:p-12">
           <div className="flex flex-col md:flex-row md:items-center items-center gap-12">
@@ -52,7 +52,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* MASCOTTE - Migliorato spacing e typography */}
+      {/* MASCOTTE */}
       <section className="bg-blue-light py-3 px-6">
         <div className="flex flex-col md:flex-row items-center gap-12 max-w-7xl mx-auto">
           <div className="flex flex-col items-center gap-4 md:w-1/3">
@@ -82,7 +82,7 @@ export default function Home() {
       {/* COMPONENTI CLIENT */}
       <AttivitaSlider />
 
-      {/* STATISTICHE - Aggiunto hover e animazione */}
+      {/* STATISTICHE */}
       <section className="bg-blue-light py-20">
         <div className="mx-auto max-w-7xl px-6">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-12">
@@ -110,92 +110,115 @@ export default function Home() {
 
       <TestimonianzeSlider />
       
-      {/* ATTIVITÀ EXTRA - NUOVA SEZIONE MONOCROMATICA */}
+      {/* ATTIVITÀ EXTRA - NUOVO LAYOUT LATERALE */}
       <section className="py-16 px-6 bg-blue-light">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-4 text-white">
             Non Solo Campi Estivi!
           </h2>
-          <p className="text-center text-white text-lg mb-12 max-w-3xl mx-auto">
+          <p className="text-center text-white font-semibold text-lg mb-12 max-w-3xl mx-auto">
             Scopri le nostre attività extra per tutto l'anno.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-            {/* Card Psicomotricità */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300">
-              <div className="relative h-48">
-                <Image
-                  src="/imgs/sport.jpg"
-                  alt="Psicomotricità negli asili"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold text-blue-deep mb-3">
-                  Psicomotricità negli Asili
-                </h3>
-                <p className="text-gray-700 mb-4 leading-relaxed">
-                  Percorsi educativi per bambini dai 12 mesi ai 5 anni che favoriscono lo sviluppo 
-                  motorio e cognitivo attraverso il gioco e attività ludiche stimolanti.
-                </p>
-                <Link
-                  href="/Psicomotricita"
-                  className="inline-block w-full text-center bg-cyan-600 text-white py-3 rounded-lg 
-                    hover:bg-cyan-700 transition-all duration-300 font-semibold"
-                >
-                  Scopri di Più
-                </Link>
+          <div className="space-y-8">
+            {/* Psicomotricità - Foto SINISTRA */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+              <div className="flex flex-col md:flex-row">
+                {/* Immagine */}
+                <div className="relative h-64 md:h-auto md:w-2/5">
+                  <Image
+                    src="/imgs/psicomotricitaImmagine.jpg"
+                    alt="Psicomotricità negli asili"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                
+                {/* Contenuto */}
+                <div className="p-8 md:w-3/5 flex flex-col justify-center">
+                  <h3 className="text-2xl md:text-3xl font-bold text-blue-deep mb-4">
+                    👶 Psicomotricità negli Asili
+                  </h3>
+                  <p className="text-gray-700 mb-6 leading-relaxed">
+                    Percorsi educativi per bambini dai 12 mesi ai 5 anni che favoriscono lo sviluppo 
+                    motorio e cognitivo attraverso il gioco e attività ludiche stimolanti.
+                  </p>
+                  <div className="space-y-2 mb-6">
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <span className="text-cyan-600 font-bold text-xl">✓</span>
+                      <span>Sviluppo motorio e coordinazione</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <span className="text-cyan-600 font-bold text-xl">✓</span>
+                      <span>Socializzazione e gioco di gruppo</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <span className="text-cyan-600 font-bold text-xl">✓</span>
+                      <span>Psicomotricisti qualificati</span>
+                    </div>
+                  </div>
+                  <Link
+                    href="/Psicomotricita"
+                    className="inline-block w-full md:w-auto text-center bg-cyan-600 text-white py-3 px-8 rounded-lg 
+                      hover:bg-cyan-700 transition-all duration-300 font-semibold shadow-md hover:shadow-lg"
+                  >
+                    Scopri di Più →
+                  </Link>
+                </div>
               </div>
             </div>
 
-            {/* Card Calcio */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300">
-              <div className="relative h-48">
-                <Image
-                  src="/imgs/arco.jpg"
-                  alt="Lezioni individuali di calcio"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold text-blue-deep mb-3">
-                  Lezioni Individuali di Calcio
-                </h3>
-                <p className="text-gray-700 mb-4 leading-relaxed">
-                  Allenamenti personalizzati per migliorare tecnica e tattica. Dai principianti 
-                  agli avanzati, ogni atleta riceve un percorso su misura con allenatori certificati.
-                </p>
-                <Link
-                  href="/LezioniCalcio"
-                  className="inline-block w-full text-center bg-cyan-600 text-white py-3 rounded-lg 
-                    hover:bg-cyan-700 transition-all duration-300 font-semibold"
-                >
-                  Scopri di Più
-                </Link>
+            {/* Calcio - Foto DESTRA */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+              <div className="flex flex-col md:flex-row-reverse">
+                {/* Immagine */}
+                <div className="relative h-64 md:h-auto md:w-2/5">
+                  <Image
+                    src="/imgs/calcio.jpg"
+                    alt="Lezioni individuali di calcio"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                
+                {/* Contenuto */}
+                <div className="p-8 md:w-3/5 flex flex-col justify-center">
+                  <h3 className="text-2xl md:text-3xl font-bold text-blue-deep mb-4">
+                    ⚽ Lezioni Individuali di Calcio
+                  </h3>
+                  <p className="text-gray-700 mb-6 leading-relaxed">
+                    Allenamenti personalizzati per migliorare tecnica e tattica. Dai principianti 
+                    agli avanzati, ogni atleta riceve un percorso su misura con allenatori certificati.
+                  </p>
+                  <div className="space-y-2 mb-6">
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <span className="text-cyan-600 font-bold text-xl">✓</span>
+                      <span>Allenamenti personalizzati 1-a-1</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <span className="text-cyan-600 font-bold text-xl">✓</span>
+                      <span>Tecnica, tattica e preparazione fisica</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <span className="text-cyan-600 font-bold text-xl">✓</span>
+                      <span>Allenatori UEFA certificati</span>
+                    </div>
+                  </div>
+                  <Link
+                    href="/LezioniCalcio"
+                    className="inline-block w-full md:w-auto text-center bg-cyan-600 text-white py-3 px-8 rounded-lg 
+                      hover:bg-cyan-700 transition-all duration-300 font-semibold shadow-md hover:shadow-lg"
+                  >
+                    Scopri di Più →
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* CTA Email */}
-          <div className="text-center bg-white rounded-xl shadow-lg p-8">
-            <p className="text-blue-deep text-lg mb-4 font-semibold">
-              Vuoi maggiori informazioni su queste attività?
-            </p>
-            <a
-              href="mailto:sportessence.asd.aps@gmail.com?subject=Richiesta Informazioni - Attività Extra"
-              className="inline-block bg-cyan-600 text-white py-3 px-8 rounded-lg shadow-md 
-                hover:bg-cyan-700 transition-all duration-300 font-semibold"
-            >
-              📧 Contattaci via Email
-            </a>
           </div>
         </div>
       </section>
 
-
-      {/* FAQ + CTA - Migliorato layout e contrasti */}
+      {/* FAQ + CTA */}
       <section className="bg-cream py-20 px-6">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-stretch">
           
@@ -251,57 +274,62 @@ export default function Home() {
               <strong className="block mt-2">Posti limitati!</strong>
             </p>
             <Link
-              href="/Iscrizione"
+              href="/Campi"
               className="bg-white text-blue-deep py-4 px-8 rounded-lg shadow-lg 
                 font-bold text-lg hover:bg-cream hover:scale-105 
                 transition-all duration-300"
             >
-              Iscriviti Ora →
+              Scopri i Campi →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* SPONSOR - Aggiunto titolo e migliorato spacing */}
-      <section className="bg-blue-light py-16">
-        <div className="text-center mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-8">
+      {/* SPONSOR - PIÙ STRETTO */}
+      <section className="py-16 px-6 bg-cream">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-blue-deep text-center mb-8">
             I Nostri Partner
           </h2>
-          <div className="flex justify-center items-center gap-12 md:gap-16 flex-wrap">
-            {[{
-              name: "ASC Sport",
-              img: "https://www.ascsport.it/wp-content/themes/asc_sport/images_new/ASC-Logo.svg",
-              href: "https://www.ascsport.it"
-            },{
-              name: "Seristampa",
-              img: "https://www.seristampa.promo/wp-content/uploads/2024/01/LOGO-header.png",
-              href: "https://www.seristampa.promo"
-            },{
-              name: "Centro SP",
-              img: "https://centrosp.it/wp-content/uploads/2021/12/CPS-Logo-Transparent.png",
-              href: "https://centrosp.it"
-            }].map((sponsor) => (
-              <a
-                key={sponsor.name}
-                href={sponsor.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block p-4 rounded-lg
-                  hover:shadow-xl hover:scale-110 transition-all duration-300"
-              >
-                <Image
-                  src={sponsor.img}
-                  alt={sponsor.name}
-                  width={200}
-                  height={120}
-                  className="object-contain"
-                />
-              </a>
-            ))}
+          <div className="bg-blue-light rounded-2xl shadow-lg p-8">
+            <div className="flex justify-center items-center gap-12 md:gap-16 flex-wrap">
+              {[{
+                name: "ASC Sport",
+                img: "https://www.ascsport.it/wp-content/themes/asc_sport/images_new/ASC-Logo.svg",
+                href: "https://www.ascsport.it"
+              },{
+                name: "Seristampa",
+                img: "https://www.seristampa.promo/wp-content/uploads/2024/01/LOGO-header.png",
+                href: "https://www.seristampa.promo"
+              },{
+                name: "Centro SP",
+                img: "https://centrosp.it/wp-content/uploads/2021/12/CPS-Logo-Transparent.png",
+                href: "https://centrosp.it"
+              }].map((sponsor) => (
+                <a
+                  key={sponsor.name}
+                  href={sponsor.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block p-4 rounded-lg
+                    hover:shadow-xl hover:scale-110 transition-all duration-300"
+                >
+                  <Image
+                    src={sponsor.img}
+                    alt={sponsor.name}
+                    width={180}
+                    height={100}
+                    className="object-contain"
+                  />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </section>
+
+      {/* STACCO CREMA PRIMA DEL FOOTER */}
+      <div className="h-12 bg-cream"></div>
     </main>
   );
 }

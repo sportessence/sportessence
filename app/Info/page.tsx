@@ -1,3 +1,4 @@
+import { Mail } from "lucide-react";
 import Link from "next/link";
 
 export default function InfoUtili() {
@@ -304,7 +305,7 @@ export default function InfoUtili() {
           </div>
 
           {/* FAQ Logistica */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-12">
+          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
             <h2 className="text-3xl md:text-4xl font-bold text-blue-deep mb-8 text-center">
               Logistica e Trasporti
             </h2>
@@ -345,62 +346,33 @@ export default function InfoUtili() {
         </div>
       </section>
 
-      {/* CTA Contatti - STILE CAMPI */}
-      <section className="bg-blue-light py-16 px-6 shadow-2xl">
-        <div className="max-w-3xl mx-auto text-center text-white">
-          <div className="text-5xl mb-6">💬</div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+      {/* Sezione Info Contatti */}
+        <section className="pb-12 px-6">
+          <div className="max-w-4xl mx-auto bg-blue-light backdrop-blur-sm rounded-2xl shadow-xl p-8 text-center">
+            <h3 className="text-2xl font-bold text-white mb-4">
             Altre Domande?
-          </h2>
-          <p className="text-lg md:text-xl mb-8 leading-relaxed">
-            Se non hai trovato la risposta che cercavi, contattaci! 
-            Siamo a tua disposizione per qualsiasi chiarimento.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="mailto:sportessence.asd.aps@gmail.com"
-              className="group inline-block bg-white text-blue-deep px-8 py-4 rounded-xl shadow-lg 
-                hover:-translate-y-1 hover:shadow-2xl transition-all duration-300 ease-out 
-                font-bold text-lg flex items-center justify-center gap-3"
-            >
-              <span className="text-2xl group-hover:scale-110 transition-transform">📧</span>
-              <span>Invia una Email</span>
-            </a>
-            <a
-              href="tel:3420394661"
-              className="group inline-block bg-transparent border-2 border-white text-white 
-                px-8 py-4 rounded-xl shadow-lg hover:bg-white hover:text-cyan-600
-                transition-all duration-300 ease-out font-bold text-lg flex items-center justify-center gap-3"
-            >
-              <span className="text-2xl group-hover:scale-110 transition-transform">📞</span>
-              <span>Chiamaci</span>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Iscrizione */}
-      <section className="py-16 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-10 text-center border-2 border-fox">
-            <div className="text-6xl mb-4">🎉</div>
-            <h3 className="text-3xl font-bold text-blue-deep mb-4">
-              Pronto a Partire?
             </h3>
-            <p className="text-gray-700 text-lg mb-8">
-              Inizia ora il processo di iscrizione per garantire il posto 
-              di tuo figlio ai nostri campi estivi!
-            </p>
-            <Link
-              href="/Iscrizione"
-              className="inline-block bg-fox text-white px-10 py-4 rounded-xl text-lg font-bold
-                hover:-translate-y-1 hover:shadow-xl transition-all duration-300 shadow-lg"
-            >
-              Procedi con l'Iscrizione →
-            </Link>
+            <p className="text-white mb-6">
+            Se non hai trovato la risposta che cercavi, contattaci! 
+            Siamo a tua disposizione per qualsiasi chiarimento.            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center text-sm">
+              <a 
+                href="mailto:sportessence.asd.aps@gmail.com"
+                className="flex items-center gap-2 text-white hover:font-bold hover:underline font-semibold"
+              >
+                <Mail size={18} />
+                sportessence.asd.aps@gmail.com
+              </a>
+              <span className="hidden sm:inline text-white">|</span>
+              <a 
+                href="tel:3420394661"
+                className="flex items-center gap-2 text-white hover:font-bold hover:underline font-semibold"
+              >
+                📞 342 039 4661
+              </a>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
     </main>
   );
 }

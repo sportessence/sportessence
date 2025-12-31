@@ -111,8 +111,8 @@ export default function Navbar({ initialRole }: NavbarProps) {
       { name: "Campi Estivi", href: "/Campi" },
       { name: "EXTRA", href: "#", isExtra: true },
       { name: "Info utili", href: "/Info" },
-      { name: "Nuova Iscrizione", href: "/Iscrizione" },
-      { name: "Pagina personale", href: "/Utente" },
+      { name: "Iscrizioni", href: "/Iscrizioni" },
+      { name: "Profilo", href: "/Utente" },
     ],
     admin: [
       { name: "Dashboard", href: "/admin/Dashboard" },
@@ -140,22 +140,22 @@ export default function Navbar({ initialRole }: NavbarProps) {
         </Link>
 
         {/* Menu desktop */}
-        <div className="hidden lg:flex flex-nowrap space-x-6 uppercase text-[clamp(14px,2vw,18px)] items-center">
+        <div className="hidden lg:flex flex-nowrap items-center gap-4 xl:gap-6 uppercase text-[clamp(13px,1.8vw,16px)]">
           {navLinks[role].map((link) => {
             if (link.isExtra) {
               return (
                 <div key={link.name} className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setIsExtraOpen(!isExtraOpen)}
-                    className={`flex items-center gap-1 transition hover:underline hover:font-semibold hover:scale-110 ${
+                    className={`flex items-center gap-1 transition hover:underline hover:font-semibold hover:scale-105 ${
                       pathname === "/Psicomotricita" || pathname === "/LezioniCalcio"
-                        ? "text-white underline underline-offset-4 decoration-2 font-bold scale-110"
-                        : ""
+                        ? "text-white underline underline-offset-4 decoration-2 font-bold scale-105"
+                        : "text-white"
                     }`}
                   >
                     {link.name}
                     <ChevronDown 
-                      size={18} 
+                      size={16} 
                       className={`transition-transform duration-200 ${isExtraOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
@@ -165,8 +165,8 @@ export default function Navbar({ initialRole }: NavbarProps) {
                       <Link
                         href="/Psicomotricita"
                         onClick={() => setIsExtraOpen(false)}
-                        className={`block px-4 py-3 text-sm text-white hover:bg-blue-light hover:text-white transition-colors ${
-                          pathname === "/Psicomotricita" ? "bg-blue-light text-white font-semibold" : ""
+                        className={`block px-4 py-3 text-sm text-white hover:underline hover:font-semibold transition-all ${
+                          pathname === "/Psicomotricita" ? "text-white font-bold underline" : ""
                         }`}
                       >
                         Psicomotricità negli Asili
@@ -174,8 +174,8 @@ export default function Navbar({ initialRole }: NavbarProps) {
                       <Link
                         href="/LezioniCalcio"
                         onClick={() => setIsExtraOpen(false)}
-                        className={`block px-4 py-3 text-sm text-gray-700 hover:bg-blue-light hover:text-white transition-colors ${
-                          pathname === "/LezioniCalcio" ? "bg-blue-light text-white font-semibold" : ""
+                        className={`block px-4 py-3 text-sm text-white hover:underline hover:font-semibold transition-all ${
+                          pathname === "/LezioniCalcio" ? "text-white font-bold underline" : ""
                         }`}
                       >
                         Lezioni Individuali di Calcio
@@ -190,9 +190,9 @@ export default function Navbar({ initialRole }: NavbarProps) {
               <Link
                 key={link.name}
                 href={link.href}
-                className={`transition hover:underline hover:font-semibold hover:scale-110 ${
+                className={`transition hover:underline hover:font-semibold hover:scale-105 text-white whitespace-nowrap ${
                   pathname?.toLowerCase() === link.href.toLowerCase()
-                    ? "text-white underline underline-offset-4 decoration-2 font-bold scale-110"
+                    ? "underline underline-offset-4 decoration-2 font-bold scale-105"
                     : ""
                 }`}
               >
@@ -204,7 +204,7 @@ export default function Navbar({ initialRole }: NavbarProps) {
           {role !== "guest" && (
             <button 
               onClick={handleLogout} 
-              className="ml-4 text-white hover:text-red-400 transition"
+              className="ml-2 text-white hover:text-red-400 transition"
               aria-label="Logout"
               title="Esci"
             >
@@ -232,7 +232,7 @@ export default function Navbar({ initialRole }: NavbarProps) {
                 <div key={link.name}>
                   <button
                     onClick={() => setIsExtraOpen(!isExtraOpen)}
-                    className="w-full text-left flex items-center justify-between transition-transform duration-200 hover:scale-105 hover:underline hover:font-semibold"
+                    className="w-full text-left flex items-center justify-between transition-transform duration-200 hover:scale-105 hover:underline hover:font-semibold text-white"
                   >
                     <span>{link.name}</span>
                     <ChevronDown 
@@ -246,11 +246,11 @@ export default function Navbar({ initialRole }: NavbarProps) {
                       <Link
                         href="/Psicomotricita"
                         onClick={() => {
-                          setIsExtraOpen(false);
                           setIsOpen(false);
+                          setIsExtraOpen(false);
                         }}
-                        className={`block text-sm transition-transform duration-200 hover:scale-105 ${
-                          pathname === "/Psicomotricita" ? "text-white font-bold underline" : ""
+                        className={`block text-sm transition-transform duration-200 hover:scale-105 text-white ${
+                          pathname === "/Psicomotricita" ? "font-bold underline" : ""
                         }`}
                       >
                         Psicomotricità negli Asili
@@ -258,11 +258,11 @@ export default function Navbar({ initialRole }: NavbarProps) {
                       <Link
                         href="/LezioniCalcio"
                         onClick={() => {
-                          setIsExtraOpen(false);
                           setIsOpen(false);
+                          setIsExtraOpen(false);
                         }}
-                        className={`block text-sm transition-transform duration-200 hover:scale-105 ${
-                          pathname === "/LezioniCalcio" ? "text-white font-bold underline" : ""
+                        className={`block text-sm transition-transform duration-200 hover:scale-105 text-white ${
+                          pathname === "/LezioniCalcio" ? "font-bold underline" : ""
                         }`}
                       >
                         Lezioni Individuali di Calcio
@@ -279,8 +279,8 @@ export default function Navbar({ initialRole }: NavbarProps) {
                 key={link.name}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className={`block transition-transform duration-200 hover:scale-105 hover:underline hover:font-semibold ${
-                  isActive ? "text-white font-bold underline underline-offset-4 decoration-2" : ""
+                className={`block transition-transform duration-200 hover:scale-105 hover:underline hover:font-semibold text-white ${
+                  isActive ? "font-bold underline underline-offset-4 decoration-2" : ""
                 }`}
               >
                 {link.name}

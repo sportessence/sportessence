@@ -8,7 +8,7 @@ export default function Psicomotricita() {
       {/* HERO */}
       <section className="relative h-[60vh] overflow-hidden">
         <Image
-          src="/imgs/psicomotricita-hero.jpg"
+          src="/imgs/psicomotricitaImmagine.jpg"
           alt="Bambini durante attività di psicomotricità"
           fill
           priority
@@ -198,7 +198,7 @@ export default function Psicomotricita() {
       </section>
 
       {/* TESTIMONIANZE */}
-      <section className="py-16 px-6 bg-gradient-to-r from-blue-light to-cyan-600">
+      <section className="py-16 px-6 bg-blue-light">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12 text-white">
             Cosa Dicono di Noi
@@ -306,30 +306,34 @@ export default function Psicomotricita() {
         </div>
       </section>
 
-      {/* LINK ALTRE ATTIVITÀ */}
-      <section className="py-12 px-6 bg-blue-light">
-        <div className="max-w-5xl mx-auto text-center">
-          <h3 className="text-2xl font-bold text-white mb-6">
-            Scopri le Nostre Altre Attività
-          </h3>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/LezioniCalcio"
-              className="bg-white text-blue-deep py-3 px-8 rounded-lg shadow-md 
-                hover:-translate-y-1 hover:shadow-xl transition-all duration-300 font-semibold"
-            >
-              Lezioni Individuali di Calcio ⚽
-            </Link>
-            <Link
-              href="/Campi"
-              className="bg-cyan-600 text-white py-3 px-8 rounded-lg shadow-md 
-                hover:-translate-y-1 hover:shadow-xl transition-all duration-300 font-semibold"
-            >
-              Campi Estivi 🏕️
-            </Link>
+      {/* Sezione Altre Attività */}
+        <section className="py-16 px-6">
+          <div className="mx-auto max-w-4xl text-center bg-blue-light p-8 rounded-2xl shadow-2xl">
+            <h3 className="text-3xl font-bold text-white mb-4">
+              Scopri le Nostre Altre Attività! 🌟
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/Campi"
+                className="bg-white text-blue-deep py-4 px-8 rounded-lg shadow-md 
+                  hover:-translate-y-1 hover:shadow-xl transition-all duration-300 font-semibold
+                  flex items-center justify-center gap-2"
+              >
+                <span className="text-2xl">🏕️</span>
+                Campi Estivi
+              </Link>
+              <Link
+                href="/LezioniCalcio"
+                className="bg-white text-blue-deep py-4 px-8 rounded-lg shadow-md 
+                  hover:-translate-y-1 hover:shadow-xl transition-all duration-300 font-semibold
+                  flex items-center justify-center gap-2"
+              >
+                <span className="text-2xl">⚽</span>
+                Lezioni Individuali di Calcio
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
     </main>
   );
 }

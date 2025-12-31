@@ -220,8 +220,6 @@ export default async function CampiPage() {
 
                       {/* Body Card - flex-grow per occupare spazio */}
                       <div className="p-6 flex flex-col flex-grow">
-                        {/* Avviso Iscrizioni Chiuse - solo per utenti loggati */}
-                      
                         {/* Date - sempre presente */}
                         <div className="flex items-start gap-3 mb-4">
                           <div className="bg-cyan-50 p-2 rounded-lg">
@@ -385,6 +383,38 @@ export default async function CampiPage() {
               >
                 📞 342 039 4661
               </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Sezione Altre Attività */}
+        <section className="py-16 px-6">
+          <div className="mx-auto max-w-4xl text-center bg-blue-light p-8 rounded-2xl shadow-2xl">
+            <h3 className="text-3xl font-bold text-white mb-4">
+              Scopri le Nostre Altre Attività! 🌟
+            </h3>
+            <p className="text-white/90 text-lg mb-8">
+              Non solo campi estivi: offriamo anche attività durante tutto l'anno
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/Psicomotricita"
+                className="bg-white text-blue-deep py-4 px-8 rounded-lg shadow-md 
+                  hover:-translate-y-1 hover:shadow-xl transition-all duration-300 font-semibold
+                  flex items-center justify-center gap-2"
+              >
+                <span className="text-2xl">👶</span>
+                Psicomotricità negli Asili
+              </Link>
+              <Link
+                href="/LezioniCalcio"
+                className="bg-white text-blue-deep py-4 px-8 rounded-lg shadow-md 
+                  hover:-translate-y-1 hover:shadow-xl transition-all duration-300 font-semibold
+                  flex items-center justify-center gap-2"
+              >
+                <span className="text-2xl">⚽</span>
+                Lezioni Individuali di Calcio
+              </Link>
             </div>
           </div>
         </section>
