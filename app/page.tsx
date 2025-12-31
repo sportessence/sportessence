@@ -109,6 +109,91 @@ export default function Home() {
       </section>
 
       <TestimonianzeSlider />
+      
+      {/* ATTIVITÀ EXTRA - NUOVA SEZIONE MONOCROMATICA */}
+      <section className="py-16 px-6 bg-blue-light">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4 text-white">
+            Non Solo Campi Estivi!
+          </h2>
+          <p className="text-center text-white text-lg mb-12 max-w-3xl mx-auto">
+            Scopri le nostre attività extra per tutto l'anno.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            {/* Card Psicomotricità */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+              <div className="relative h-48">
+                <Image
+                  src="/imgs/sport.jpg"
+                  alt="Psicomotricità negli asili"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="p-6">
+                <h3 className="text-2xl font-bold text-blue-deep mb-3">
+                  Psicomotricità negli Asili
+                </h3>
+                <p className="text-gray-700 mb-4 leading-relaxed">
+                  Percorsi educativi per bambini dai 12 mesi ai 5 anni che favoriscono lo sviluppo 
+                  motorio e cognitivo attraverso il gioco e attività ludiche stimolanti.
+                </p>
+                <Link
+                  href="/Psicomotricita"
+                  className="inline-block w-full text-center bg-cyan-600 text-white py-3 rounded-lg 
+                    hover:bg-cyan-700 transition-all duration-300 font-semibold"
+                >
+                  Scopri di Più
+                </Link>
+              </div>
+            </div>
+
+            {/* Card Calcio */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+              <div className="relative h-48">
+                <Image
+                  src="/imgs/arco.jpg"
+                  alt="Lezioni individuali di calcio"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="p-6">
+                <h3 className="text-2xl font-bold text-blue-deep mb-3">
+                  Lezioni Individuali di Calcio
+                </h3>
+                <p className="text-gray-700 mb-4 leading-relaxed">
+                  Allenamenti personalizzati per migliorare tecnica e tattica. Dai principianti 
+                  agli avanzati, ogni atleta riceve un percorso su misura con allenatori certificati.
+                </p>
+                <Link
+                  href="/LezioniCalcio"
+                  className="inline-block w-full text-center bg-cyan-600 text-white py-3 rounded-lg 
+                    hover:bg-cyan-700 transition-all duration-300 font-semibold"
+                >
+                  Scopri di Più
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA Email */}
+          <div className="text-center bg-white rounded-xl shadow-lg p-8">
+            <p className="text-blue-deep text-lg mb-4 font-semibold">
+              Vuoi maggiori informazioni su queste attività?
+            </p>
+            <a
+              href="mailto:sportessence.asd.aps@gmail.com?subject=Richiesta Informazioni - Attività Extra"
+              className="inline-block bg-cyan-600 text-white py-3 px-8 rounded-lg shadow-md 
+                hover:bg-cyan-700 transition-all duration-300 font-semibold"
+            >
+              📧 Contattaci via Email
+            </a>
+          </div>
+        </div>
+      </section>
+
 
       {/* FAQ + CTA - Migliorato layout e contrasti */}
       <section className="bg-cream py-20 px-6">
@@ -179,7 +264,7 @@ export default function Home() {
 
       {/* SPONSOR - Aggiunto titolo e migliorato spacing */}
       <section className="bg-blue-light py-16">
-        <div className="px-6 text-center max-w-7xl mx-auto">
+        <div className="text-center mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-8">
             I Nostri Partner
           </h2>

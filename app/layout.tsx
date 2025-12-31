@@ -5,7 +5,6 @@ import "./globals.css";
 
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
-import ScrollToTop from "./components/scrollToTop";
 import { createClient } from "./utils/supabase/server";
 
 const montserrat = Montserrat({
@@ -67,21 +66,16 @@ export default async function RootLayout({
   const initialRole = await getUserRole();
 
   return (
-    <html lang="it" className="scroll-smooth">
+    <html lang="it">
       <body
-        className={`${montserrat.className} bg-gray-50 min-h-screen flex flex-col overflow-x-hidden`}
+        className={`${montserrat.className} bg-gray-50 min-h-screen flex flex-col`}
         suppressHydrationWarning={true}
       >
-        <ScrollToTop />
-        {/* Navbar sticky - sempre visibile in cima */}
         <Navbar initialRole={initialRole} />
 
-        <main className="flex-grow mt-20">
-        {/* Main content - il flex-grow fa sì che occupi tutto lo spazio disponibile */}
-          {children}
-        </main>
+        {/* Padding top per compensare navbar fixed */}
+        <main className="flex-grow pt-[80px]">{children}</main>
 
-        {/* Footer */}
         <Footer />
       </body>
     </html>

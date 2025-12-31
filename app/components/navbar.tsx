@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import logo from "@/public/imgs/logo.png";
 import { usePathname, useRouter } from "next/navigation";
@@ -17,11 +17,25 @@ interface NavbarProps {
 export default function Navbar({ initialRole }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [role, setRole] = useState<UserRole>(initialRole);
+  const [isExtraOpen, setIsExtraOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   const isCheckingRef = useRef(false);
+
+  // Chiudi dropdown quando si clicca fuori
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsExtraOpen(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -64,36 +78,29 @@ export default function Navbar({ initialRole }: NavbarProps) {
 
   const handleLogout = async () => {
     try {
-      // ✅ 1. Logout da Supabase
       await supabase.auth.signOut();
       
-      // ✅ 2. Pulisci tutti i cookie manualmente (backup)
-      // Questo garantisce che anche cookie residui vengano rimossi
       if (typeof document !== 'undefined') {
         document.cookie.split(";").forEach((cookie) => {
           const cookieName = cookie.split("=")[0].trim();
-          // Rimuovi il cookie settandolo con data passata
           document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         });
       }
       
-      // ✅ 3. Aggiorna stato locale
       setRole("guest");
-      
-      // ✅ 4. Hard reload per pulire tutto
       window.location.href = "/";
     } catch (err) {
       console.error("Errore logout:", err);
-      // ✅ Anche in caso di errore, forza il reload
       window.location.href = "/";
     }
   };
 
-  const navLinks: Record<UserRole, { name: string; href: string }[]> = {
+  const navLinks: Record<UserRole, { name: string; href: string; isExtra?: boolean }[]> = {
     guest: [
       { name: "Home", href: "/" },
       { name: "Chi siamo", href: "/About" },
       { name: "Campi Estivi", href: "/Campi" },
+      { name: "EXTRA", href: "#", isExtra: true },
       { name: "Info utili", href: "/Info" },
       { name: "Login", href: "/Login" },
       { name: "Registrazione", href: "/Registrazione" },
@@ -101,20 +108,22 @@ export default function Navbar({ initialRole }: NavbarProps) {
     user: [
       { name: "Home", href: "/" },
       { name: "Chi siamo", href: "/About" },
-      { name: "Info utili", href: "/Info" },
       { name: "Campi Estivi", href: "/Campi" },
+      { name: "EXTRA", href: "#", isExtra: true },
+      { name: "Info utili", href: "/Info" },
       { name: "Nuova Iscrizione", href: "/Iscrizione" },
       { name: "Pagina personale", href: "/Utente" },
     ],
     admin: [
       { name: "Dashboard", href: "/admin/Dashboard" },
       { name: "Campi Estivi", href: "/admin/Campi" },
+      { name: "EXTRA", href: "#", isExtra: true },
       { name: "Pagamenti", href: "/admin/Pagamenti" },
     ],
   };
 
   return (
-    <nav className="bg-blue-light fixed top-0 w-full z-50 shadow-md">
+    <nav className="bg-blue-light fixed top-0 left-0 right-0 z-50 shadow-md">
       <div className="max-w-7xl mx-auto py-2 px-4 h-auto flex justify-between items-center">
         <Link 
           href={role === "admin" ? "/admin/Dashboard" : "/"} 
@@ -132,19 +141,65 @@ export default function Navbar({ initialRole }: NavbarProps) {
 
         {/* Menu desktop */}
         <div className="hidden lg:flex flex-nowrap space-x-6 uppercase text-[clamp(14px,2vw,18px)] items-center">
-          {navLinks[role].map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              className={`transition hover:underline hover:font-semibold hover:scale-110 ${
-                pathname?.toLowerCase() === link.href.toLowerCase()
-                  ? "text-white underline underline-offset-4 decoration-2 font-bold scale-110"
-                  : ""
-              }`}
-            >
-              {link.name}
-            </Link>
-          ))}
+          {navLinks[role].map((link) => {
+            if (link.isExtra) {
+              return (
+                <div key={link.name} className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setIsExtraOpen(!isExtraOpen)}
+                    className={`flex items-center gap-1 transition hover:underline hover:font-semibold hover:scale-110 ${
+                      pathname === "/Psicomotricita" || pathname === "/LezioniCalcio"
+                        ? "text-white underline underline-offset-4 decoration-2 font-bold scale-110"
+                        : ""
+                    }`}
+                  >
+                    {link.name}
+                    <ChevronDown 
+                      size={18} 
+                      className={`transition-transform duration-200 ${isExtraOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  
+                  {isExtraOpen && (
+                    <div className="absolute top-full left-0 mt-2 w-64 bg-blue-light rounded-lg shadow-2xl py-2 z-50 border border-white">
+                      <Link
+                        href="/Psicomotricita"
+                        onClick={() => setIsExtraOpen(false)}
+                        className={`block px-4 py-3 text-sm text-white hover:bg-blue-light hover:text-white transition-colors ${
+                          pathname === "/Psicomotricita" ? "bg-blue-light text-white font-semibold" : ""
+                        }`}
+                      >
+                        Psicomotricità negli Asili
+                      </Link>
+                      <Link
+                        href="/LezioniCalcio"
+                        onClick={() => setIsExtraOpen(false)}
+                        className={`block px-4 py-3 text-sm text-gray-700 hover:bg-blue-light hover:text-white transition-colors ${
+                          pathname === "/LezioniCalcio" ? "bg-blue-light text-white font-semibold" : ""
+                        }`}
+                      >
+                        Lezioni Individuali di Calcio
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                key={link.name}
+                href={link.href}
+                className={`transition hover:underline hover:font-semibold hover:scale-110 ${
+                  pathname?.toLowerCase() === link.href.toLowerCase()
+                    ? "text-white underline underline-offset-4 decoration-2 font-bold scale-110"
+                    : ""
+                }`}
+              >
+                {link.name}
+              </Link>
+            );
+          })}
 
           {role !== "guest" && (
             <button 
@@ -172,6 +227,52 @@ export default function Navbar({ initialRole }: NavbarProps) {
       {isOpen && (
         <div className="lg:hidden px-5 pb-3 space-y-2 bg-blue-light font-sans uppercase text-[16px]">
           {navLinks[role].map((link) => {
+            if (link.isExtra) {
+              return (
+                <div key={link.name}>
+                  <button
+                    onClick={() => setIsExtraOpen(!isExtraOpen)}
+                    className="w-full text-left flex items-center justify-between transition-transform duration-200 hover:scale-105 hover:underline hover:font-semibold"
+                  >
+                    <span>{link.name}</span>
+                    <ChevronDown 
+                      size={18} 
+                      className={`transition-transform duration-200 ${isExtraOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  
+                  {isExtraOpen && (
+                    <div className="ml-4 mt-2 space-y-2">
+                      <Link
+                        href="/Psicomotricita"
+                        onClick={() => {
+                          setIsExtraOpen(false);
+                          setIsOpen(false);
+                        }}
+                        className={`block text-sm transition-transform duration-200 hover:scale-105 ${
+                          pathname === "/Psicomotricita" ? "text-white font-bold underline" : ""
+                        }`}
+                      >
+                        Psicomotricità negli Asili
+                      </Link>
+                      <Link
+                        href="/LezioniCalcio"
+                        onClick={() => {
+                          setIsExtraOpen(false);
+                          setIsOpen(false);
+                        }}
+                        className={`block text-sm transition-transform duration-200 hover:scale-105 ${
+                          pathname === "/LezioniCalcio" ? "text-white font-bold underline" : ""
+                        }`}
+                      >
+                        Lezioni Individuali di Calcio
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             const isActive = pathname?.toLowerCase() === link.href.toLowerCase();
             return (
               <Link
