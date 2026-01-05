@@ -83,9 +83,11 @@ export default function Login() {
 
       // 4. Login riuscito! Redirect in base al ruolo
       if (result?.success && result?.role) {
-        const targetUrl = result.role === 'admin' ? '/admin/Dashboard' : '/';
-        window.location.href = targetUrl;
-      }
+  const targetUrl = result.role === 'admin' ? '/admin/Dashboard' : '/Utente'; // O alla home
+  
+  router.refresh(); 
+  router.push(targetUrl); 
+} 
       
     } catch (error: any) {
       console.error("Login error:", error);

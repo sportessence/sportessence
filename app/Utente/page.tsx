@@ -8,10 +8,10 @@ import {
   Mail, 
   Phone, 
   MapPin, 
-  Edit2,      // ✨ AGGIUNTO
+  Edit2,
   Save, 
   X, 
-  Trash2,     // ✨ AGGIUNTO
+  Trash2,
   Users,
   Calendar,
   AlertTriangle,
@@ -22,9 +22,10 @@ import {
   TrendingUp
 } from "lucide-react";
 import AddChildModal from "../components/addChildModal";
-import EditChildModal from "../components/editChildModal";  // ✨ AGGIUNTO
+import EditChildModal from "../components/editChildModal";
 import ProfileSection from "../components/profileSection";
-import { deleteChild } from "../actions/childrens";  // ✨ AGGIUNTO
+import { deleteChild } from "../actions/childrens";
+import DeleteConfirmModal from "../components/deleteConfirmModal"; 
 
 type Profile = {
   id: string;
@@ -79,13 +80,19 @@ export default function PaginaUtente() {
   const [enrollments, setEnrollments] = useState<{ [childId: string]: Enrollment[] }>({});
   
   const [editingProfile, setEditingProfile] = useState(false);
-  const [editingChild, setEditingChild] = useState<Child | null>(null);  // ✨ AGGIUNTO
+  const [editingChild, setEditingChild] = useState<Child | null>(null);
   
   const [alert, setAlert] = useState<{ msg: string; type: "error" | "success" } | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);  // ✨ AGGIUNTO
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  // Configurazione per il modale di conferma eliminazione (Unico)
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    isOpen: boolean;
+    type: "ACCOUNT" | "CHILD" | null;
+    data: any;
+  }>({ isOpen: false, type: null, data: null });
 
   const showAlert = (msg: string, type: "error" | "success" = "error") => {
     setAlert({ msg, type });
@@ -164,86 +171,11 @@ export default function PaginaUtente() {
     }
   };
 
-  // ✨ NUOVA FUNZIONE: Gestisce eliminazione bambino con controlli
-  const handleDeleteChild = async (child: Child) => {
-    // Verifica se ci sono iscrizioni attive
-    const childEnrollments = enrollments[child.id] || [];
-    const activeEnrollments = childEnrollments.filter(e => 
-      new Date(e.camps.data_fine) >= new Date()
-    );
-
-    if (activeEnrollments.length > 0) {
-      showAlert(
-        `❌ Impossibile eliminare: ${child.nome} ha ${activeEnrollments.length} iscrizione/i attiva/e. ` +
-        `Attendi la fine dei campi o contattaci.`,
-        "error"
-      );
-      return;
-    }
-
-    // Conferma eliminazione
-    const confirmed = window.confirm(
-      `⚠️ Sei sicuro di voler eliminare ${child.nome} ${child.cognome}?\n\n` +
-      `Questa azione è IRREVERSIBILE e eliminerà:\n` +
-      `- Tutti i dati del bambino\n` +
-      `- Lo storico delle iscrizioni passate\n\n` +
-      `Confermi l'eliminazione?`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      const result = await deleteChild(child.id);
-
-      if (result?.error) {
-        showAlert("❌ " + result.error, "error");
-        return;
-      }
-
-      showAlert(`✅ ${child.nome} eliminato con successo`, "success");
-      
-      // Ricarica i dati
-      if (profile?.id) {
-        await loadUserData(profile.id);
-      }
-    } catch (error: any) {
-      showAlert("❌ Errore durante l'eliminazione: " + error.message, "error");
-    }
-  };
-
-  const handleUpdateProfile = async () => {
+  // 1. Gestione click elimina ACCOUNT
+  const handleDeleteAccountClick = () => {
     if (!profile) return;
 
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          nome: profile.nome,
-          cognome: profile.cognome,
-          telefono: profile.telefono,
-          email_contatti: profile.email_contatti,
-          indirizzo_via: profile.indirizzo_via,
-          indirizzo_civico: profile.indirizzo_civico,
-          indirizzo_cap: profile.indirizzo_cap,
-          indirizzo_paese: profile.indirizzo_paese,
-          indirizzo_provincia: profile.indirizzo_provincia,
-        })
-        .eq('id', profile.id);
-
-      if (error) throw error;
-
-      showAlert("Dati aggiornati con successo", "success");
-      setEditingProfile(false);
-    } catch (error: any) {
-      console.error("Errore aggiornamento profilo:", error);
-      showAlert("Errore durante l'aggiornamento");
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!profile) return;
-
-    // Verifica se ci sono iscrizioni attive non saldate
+    // Controlli pre-apertura (es. pagamenti pendenti)
     const activeEnrollments = Object.values(enrollments)
       .flat()
       .filter(e => !e.saldata || e.importo_pagato < e.prezzo_totale);
@@ -252,46 +184,62 @@ export default function PaginaUtente() {
       showAlert("Impossibile eliminare: ci sono iscrizioni attive o pagamenti non saldati");
       return;
     }
-
     if (children.length > 0) {
       showAlert("Impossibile eliminare: elimina prima tutti i figli registrati");
       return;
     }
 
-    const confirmed = window.confirm(
-      "⚠️ ATTENZIONE: Questa azione è IRREVERSIBILE!\n\n" +
-      "Eliminando l'account perderai:\n" +
-      "- Tutti i dati personali\n" +
-      "- Lo storico delle iscrizioni\n\n" +
-      "Sei ASSOLUTAMENTE sicuro?"
-    );
-
-    if (!confirmed) return;
-
-    try {
-      // Elimina il profilo (il trigger eliminerà anche l'auth user)
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', profile.id);
-
-      if (error) throw error;
-
-      // Logout
-      await supabase.auth.signOut();
-      router.push("/");
-    } catch (error: any) {
-      console.error("Errore eliminazione account:", error);
-      showAlert("Errore durante l'eliminazione");
-    }
+    // APRI DIRETTAMENTE IL MODAL CON PASSWORD
+    setDeleteModalConfig({ isOpen: true, type: "ACCOUNT", data: null });
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('it-IT', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
+  // 2. Gestione click elimina BAMBINO
+  const handleDeleteChildClick = (child: Child) => {
+    const childEnrollments = enrollments[child.id] || [];
+    const activeEnrollments = childEnrollments.filter(e => 
+      new Date(e.camps.data_fine) >= new Date()
+    );
+
+    if (activeEnrollments.length > 0) {
+      showAlert(`Impossibile eliminare: ${child.nome} ha iscrizioni attive.`, "error");
+      return;
+    }
+
+    // APRI DIRETTAMENTE IL MODAL CON PASSWORD
+    setDeleteModalConfig({ isOpen: true, type: "CHILD", data: child });
+  };
+
+  // 3. LOGICA DI ESECUZIONE REALE (Eseguita dopo la password corretta)
+  const performDeletion = async () => {
+    try {
+      if (deleteModalConfig.type === "ACCOUNT") {
+        // ELIMINAZIONE ACCOUNT
+        // Nota: Il trigger SQL 'on_profile_delete' deve esistere sul DB per cancellare anche l'auth user!
+        const { error } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', profile!.id);
+
+        if (error) throw error;
+        
+        // Logout e redirect
+        await supabase.auth.signOut();
+        router.push("/");
+      } 
+      else if (deleteModalConfig.type === "CHILD") {
+        // ELIMINAZIONE BAMBINO
+        const child = deleteModalConfig.data;
+        const result = await deleteChild(child.id); // Usa la server action
+        
+        if (result?.error) throw new Error(result.error);
+        
+        showAlert(`✅ ${child.nome} eliminato con successo`, "success");
+        if (profile?.id) await loadUserData(profile.id); // Ricarica dati
+      }
+    } catch (error: any) {
+      console.error("Errore eliminazione:", error);
+      showAlert("Errore durante l'eliminazione: " + error.message);
+    }
   };
 
   const calculateAge = (birthDate: string) => {
@@ -303,8 +251,15 @@ export default function PaginaUtente() {
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
-    
     return age;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('it-IT', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
   };
 
   if (loading) {
@@ -333,7 +288,7 @@ export default function PaginaUtente() {
       {/* Alert */}
       {alert && (
         <div
-          className={`fixed z-60 top-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg font-semibold shadow-xl ${
+          className={`fixed z-[60] top-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg font-semibold shadow-xl ${
             alert.type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
           }`}
         >
@@ -359,6 +314,7 @@ export default function PaginaUtente() {
           </div>
         </div>
 
+        {/* Componente Profilo */}
         <ProfileSection 
           profile={profile} 
           onProfileUpdate={() => loadUserData(profile.id)}
@@ -375,7 +331,7 @@ export default function PaginaUtente() {
           </div>
 
           {children.length === 0 ? (
-            /* NESSUN BAMBINO: Solo pulsante registra */
+            /* NESSUN BAMBINO */
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <Users className="mx-auto mb-4 text-gray-400" size={48} />
               <p className="text-gray-600 mb-4">Non hai ancora registrato nessun bambino</p>
@@ -389,7 +345,7 @@ export default function PaginaUtente() {
               </button>
             </div>
           ) : (
-            /* CI SONO BAMBINI: Mostra lista + pulsante iscrizione per ognuno */
+            /* LISTA BAMBINI */
             <>
               <div className="space-y-4 mb-6">
                 {children.map((child) => {
@@ -400,7 +356,6 @@ export default function PaginaUtente() {
 
                   return (
                     <div key={child.id} className="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-cyan-300 transition-all">
-                      {/* Header Bambino con Pulsanti */}
                       <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           {/* Info Bambino */}
@@ -426,9 +381,8 @@ export default function PaginaUtente() {
                             </p>
                           </div>
 
-                          {/* ✨ PULSANTI AGGIORNATI */}
+                          {/* Pulsanti Azioni */}
                           <div className="flex gap-2 flex-wrap">
-                            {/* PULSANTE NUOVA ISCRIZIONE */}
                             <button
                               onClick={() => router.push(`/Iscrizione?child=${child.id}`)}
                               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 
@@ -438,7 +392,6 @@ export default function PaginaUtente() {
                               Nuova Iscrizione
                             </button>
 
-                            {/* ✨ NUOVO: PULSANTE MODIFICA */}
                             <button
                               onClick={() => {
                                 setEditingChild(child);
@@ -451,9 +404,8 @@ export default function PaginaUtente() {
                               Modifica
                             </button>
 
-                            {/* ✨ NUOVO: PULSANTE ELIMINA */}
                             <button
-                              onClick={() => handleDeleteChild(child)}
+                              onClick={() => handleDeleteChildClick(child)}
                               className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 
                                 transition-all flex items-center gap-2 font-semibold"
                             >
@@ -463,7 +415,7 @@ export default function PaginaUtente() {
                           </div>
                         </div>
 
-                        {/* Iscrizioni Attive (sempre visibili) */}
+                        {/* Iscrizioni Attive */}
                         {activeEnrollments.length > 0 && (
                           <div className="mt-4 bg-white rounded-lg p-4">
                             <p className="font-semibold text-green-600 mb-2 flex items-center gap-2">
@@ -486,7 +438,7 @@ export default function PaginaUtente() {
                 })}
               </div>
 
-              {/* PULSANTE REGISTRA ALTRO BAMBINO - Sotto tutti i bambini */}
+              {/* Pulsante Registra Altro Bambino */}
               <div className="text-center pt-4 border-t-2 border-gray-200">
                 <button
                   onClick={() => setShowAddChildModal(true)}
@@ -514,7 +466,7 @@ export default function PaginaUtente() {
           </p>
 
           <button
-            onClick={() => setShowDeleteModal(true)}
+            onClick={handleDeleteAccountClick}
             className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 
               transition-all flex items-center gap-2 font-semibold"
           >
@@ -524,7 +476,9 @@ export default function PaginaUtente() {
         </div>
       </div>
 
-      {/* Modal Modifica Password/Email */}
+      {/* MODALI */}
+      
+      {/* 1. Modale Cambio Credenziali (Email/Pass) */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
@@ -537,93 +491,16 @@ export default function PaginaUtente() {
                 <X size={24} />
               </button>
             </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-700">
-                Per modificare email o password, riceverai un link di verifica via email.
-                Clicca sul link per confermare le modifiche.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <button
-                onClick={async () => {
-                  try {
-                    showAlert("Link inviato alla tua email", "success");
-                    setShowPasswordModal(false);
-                  } catch (error) {
-                    showAlert("Errore durante l'invio");
-                  }
-                }}
-                className="w-full bg-cyan-600 text-white py-3 rounded-lg hover:bg-cyan-700 
-                  transition-all font-semibold"
-              >
-                Modifica Email/Password
-              </button>
-              <button
-                onClick={() => setShowPasswordModal(false)}
-                className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 
-                  transition-all font-semibold"
-              >
-                Annulla
-              </button>
+            {/* ... Logica o componenti per cambio credenziali ... */}
+            <div className="text-center">
+                <p className="text-gray-600 mb-4">Usa il modale che abbiamo configurato con OTP per il cambio email o password.</p>
+                <button onClick={() => setShowPasswordModal(false)} className="bg-gray-200 px-4 py-2 rounded">Chiudi (Placeholder)</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Conferma Eliminazione */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-red-600 flex items-center gap-2">
-                <AlertTriangle size={24} />
-                Conferma Eliminazione
-              </h3>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-700 mb-2 font-semibold">
-                ⚠️ Questa azione è IRREVERSIBILE
-              </p>
-              <p className="text-sm text-gray-700">
-                Perderai permanentemente:
-              </p>
-              <ul className="text-sm text-gray-700 list-disc list-inside mt-2">
-                <li>Tutti i dati personali</li>
-                <li>I dati dei figli</li>
-                <li>Lo storico delle iscrizioni</li>
-              </ul>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={handleDeleteAccount}
-                className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 
-                  transition-all font-semibold"
-              >
-                Sì, Elimina il Mio Account
-              </button>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 
-                  transition-all font-semibold"
-              >
-                Annulla
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Registra Bambino */}
+      {/* 2. Modale Aggiungi Bambino */}
       <AddChildModal
         isOpen={showAddChildModal}
         onClose={() => setShowAddChildModal(false)}
@@ -635,7 +512,7 @@ export default function PaginaUtente() {
         showAlert={showAlert}
       />
 
-      {/* ✨ NUOVO: Modal Modifica Bambino */}
+      {/* 3. Modale Modifica Bambino */}
       <EditChildModal
         isOpen={showEditModal}
         child={editingChild}
@@ -650,6 +527,20 @@ export default function PaginaUtente() {
         }}
         showAlert={showAlert}
       />
+
+      {/* 4. MODALE DI CONFERMA ELIMINAZIONE (CON PASSWORD) */}
+      <DeleteConfirmModal 
+         isOpen={deleteModalConfig.isOpen}
+         onClose={() => setDeleteModalConfig({ isOpen: false, type: null, data: null })}
+         onConfirm={performDeletion}
+         title={deleteModalConfig.type === "ACCOUNT" ? "Elimina Account" : "Elimina Bambino"}
+         description={
+           deleteModalConfig.type === "ACCOUNT" 
+             ? "Stai per eliminare definitivamente il tuo account e tutti i dati associati. Questa azione non può essere annullata."
+             : `Stai per eliminare i dati di ${deleteModalConfig.data?.nome}. Lo storico delle iscrizioni verrà perso.`
+         }
+         confirmText={deleteModalConfig.type === "ACCOUNT" ? "Elimina il mio Account" : "Elimina Bambino"}
+       />
     </main>
   );
 }
