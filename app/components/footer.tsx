@@ -3,7 +3,7 @@ import { BiMailSend, BiPhone, BiLogoInstagram, BiLogoTiktok, BiLogoFacebook } fr
 
 export default function Footer() {
   return (
-    <footer className="bg-blue-light text-white font-semibold py-8 z-50">
+    <footer className="bg-blue-light text-white font-semibold py-8 z-30">
       <div className="max-w-7xl mx-auto px-4">
         {/* Grid principale - 3 colonne su desktop, 1 su mobile */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">

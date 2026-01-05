@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, AlertCircle } from "lucide-react";
-import { createChild } from "../actions/childrens";
+import { X, Plus, Edit2, AlertCircle } from "lucide-react";
+import { updateChild } from "../actions/childrens";
 
 // REGEX VALIDAZIONI
 const nomeRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ''\s-]+$/;
@@ -11,19 +11,31 @@ const cfRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/;
 // Taglie disponibili
 const TAGLIE = ['4XS', '3XS', '2XS', 'XS', 'S', 'M', 'L', 'XL'];
 
-interface AddChildModalProps {
+type Child = {
+  id: string;
+  nome: string;
+  cognome: string;
+  cf: string;
+  data_nascita: string;
+  taglia_maglietta: string;
+  intolleranze: string[];
+};
+
+interface EditChildModalProps {
   isOpen: boolean;
   onClose: () => void;
+  child: Child | null;
   onSuccess: () => void;
   showAlert: (msg: string, type: "error" | "success") => void;
 }
 
-export default function AddChildModal({ 
+export default function EditChildModal({ 
   isOpen, 
   onClose, 
+  child,
   onSuccess,
   showAlert 
-}: AddChildModalProps) {
+}: EditChildModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -44,16 +56,16 @@ export default function AddChildModal({
     data_nascita: true,
   });
 
-  // Reset form quando si chiude/apre il modal
+  // Carica dati bambino quando si apre il modal
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen && child) {
       setFormData({
-        nome: "",
-        cognome: "",
-        cf: "",
-        data_nascita: "",
-        taglia_maglietta: "",
-        intolleranze: [],
+        nome: child.nome,
+        cognome: child.cognome,
+        cf: child.cf,
+        data_nascita: child.data_nascita,
+        taglia_maglietta: child.taglia_maglietta,
+        intolleranze: child.intolleranze || [],
       });
       setIntolleranzaInput("");
       setValidations({
@@ -63,7 +75,7 @@ export default function AddChildModal({
         data_nascita: true,
       });
     }
-  }, [isOpen]);
+  }, [isOpen, child]);
 
   // Blocca scroll quando modal è aperto
   useEffect(() => {
@@ -117,27 +129,35 @@ export default function AddChildModal({
     return birthDate <= today && birthDate >= minDate;
   };
 
-  // ✨ NUOVA FUNZIONE: Normalizza intolleranza (trim + lowercase)
+  // NORMALIZZAZIONE INTOLLERANZE
   const normalizeIntolleranza = (text: string): string => {
-    return text.trim().toLowerCase().replace(/\s+/g, ' ');
+    return text
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' '); // Rimuovi spazi multipli
   };
 
-  // ✨ AGGIORNATA: Gestisce input singoli e multipli (separati da virgola)
   const addIntolleranza = () => {
     const trimmed = intolleranzaInput.trim();
     if (!trimmed) return;
 
-    // Splitta per virgola e normalizza ogni elemento
-    const items = trimmed.split(',')
-      .map(item => normalizeIntolleranza(item))
-      .filter(item => item.length > 0); // Rimuove stringhe vuote
-
-    // Aggiunge solo gli elementi non già presenti (case-insensitive)
-    const newIntolleranze = items.filter(item => 
-      !formData.intolleranze.some(existing => 
-        existing.toLowerCase() === item.toLowerCase()
-      )
-    );
+    // Gestisce input multipli separati da virgola
+    const items = trimmed.split(',').map(item => item.trim()).filter(Boolean);
+    
+    const newIntolleranze: string[] = [];
+    
+    items.forEach(item => {
+      const normalized = normalizeIntolleranza(item);
+      
+      // Controlla se esiste già (case-insensitive)
+      const exists = formData.intolleranze.some(
+        existing => normalizeIntolleranza(existing) === normalized
+      );
+      
+      if (!exists && !newIntolleranze.includes(normalized)) {
+        newIntolleranze.push(normalized);
+      }
+    });
 
     if (newIntolleranze.length > 0) {
       setFormData(prev => ({
@@ -145,7 +165,7 @@ export default function AddChildModal({
         intolleranze: [...prev.intolleranze, ...newIntolleranze]
       }));
     }
-
+    
     setIntolleranzaInput("");
   };
 
@@ -158,11 +178,13 @@ export default function AddChildModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!child) return;
+    
     setIsSubmitting(true);
 
-    // VALIDAZIONI COMPLETE
+    // VALIDAZIONI COMPLETE (stesse di addChildModal)
     
-    // 1. Campi obbligatori
     if (!formData.nome || !formData.cognome || !formData.cf || 
         !formData.data_nascita || !formData.taglia_maglietta) {
       showAlert("❌ Compila tutti i campi obbligatori", "error");
@@ -170,7 +192,6 @@ export default function AddChildModal({
       return;
     }
 
-    // 2. Valida Nome
     if (!nomeRegex.test(formData.nome)) {
       showAlert("❌ Il nome contiene caratteri non validi (solo lettere, accenti e spazi)", "error");
       setValidations(prev => ({ ...prev, nome: false }));
@@ -178,7 +199,6 @@ export default function AddChildModal({
       return;
     }
 
-    // 3. Valida Cognome
     if (!nomeRegex.test(formData.cognome)) {
       showAlert("❌ Il cognome contiene caratteri non validi (solo lettere, accenti e spazi)", "error");
       setValidations(prev => ({ ...prev, cognome: false }));
@@ -186,7 +206,6 @@ export default function AddChildModal({
       return;
     }
 
-    // 4. Valida Codice Fiscale
     if (!cfRegex.test(formData.cf)) {
       showAlert("❌ Codice Fiscale non valido (16 caratteri, formato: RSSMRA90A01F205X)", "error");
       setValidations(prev => ({ ...prev, cf: false }));
@@ -194,7 +213,6 @@ export default function AddChildModal({
       return;
     }
 
-    // 5. Valida Data di Nascita
     if (!validateDataNascita(formData.data_nascita)) {
       showAlert("❌ Data di nascita non valida (non può essere futura)", "error");
       setValidations(prev => ({ ...prev, data_nascita: false }));
@@ -202,8 +220,8 @@ export default function AddChildModal({
       return;
     }
 
-    // 6. SALVA CON SERVER ACTION
     try {
+      // Crea FormData
       const formDataToSubmit = new FormData();
       formDataToSubmit.append('nome', formData.nome);
       formDataToSubmit.append('cognome', formData.cognome);
@@ -212,7 +230,8 @@ export default function AddChildModal({
       formDataToSubmit.append('taglia_maglietta', formData.taglia_maglietta);
       formDataToSubmit.append('intolleranze', JSON.stringify(formData.intolleranze));
 
-      const result = await createChild(formDataToSubmit);
+      // Chiama Server Action
+      const result = await updateChild(child.id, formDataToSubmit);
 
       if (result?.error) {
         showAlert("❌ " + result.error, "error");
@@ -220,21 +239,23 @@ export default function AddChildModal({
         return;
       }
 
-      showAlert("✅ Bambino registrato con successo!", "success");
-      onSuccess();
-      onClose();
+      // Successo!
+      showAlert("✅ Dati bambino aggiornati con successo!", "success");
+      onSuccess(); // Ricarica i dati
+      onClose(); // Chiudi modal
     } catch (error: any) {
-      showAlert("❌ Errore durante la registrazione: " + error.message, "error");
+      console.error("Errore aggiornamento bambino:", error);
+      showAlert("❌ Errore durante l'aggiornamento: " + error.message, "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !child) return null;
 
   return (
     <div className="fixed inset-0 z-49 flex items-center justify-center p-4">
-      {/* Overlay */}
+      {/* Overlay sfondo opacizzato */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
@@ -243,10 +264,10 @@ export default function AddChildModal({
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-blue-light text-white p-6 flex justify-between items-center rounded-t-2xl z-10">
+        <div className="sticky top-0 bg-blue-900 text-white p-6 flex justify-between items-center rounded-t-2xl z-10">
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Plus size={28} />
-            Registra Nuovo Bambino
+            <Edit2 size={28} />
+            Modifica Dati Bambino
           </h2>
           <button
             onClick={onClose}
@@ -319,9 +340,6 @@ export default function AddChildModal({
             {!validations.cf && formData.cf && (
               <p className="text-red-500 text-xs mt-1">16 caratteri (es: RSSMRA90A01F205X)</p>
             )}
-            <p className="text-gray-500 text-xs mt-1">
-              Formato: 6 lettere + 2 numeri + 1 lettera + 2 numeri + 1 lettera + 3 numeri + 1 lettera
-            </p>
           </div>
 
           {/* Data di Nascita e Taglia */}
@@ -367,7 +385,7 @@ export default function AddChildModal({
             </div>
           </div>
 
-          {/* Intolleranze/Allergie - AGGIORNATO */}
+          {/* Intolleranze/Allergie */}
           <div>
             <label className="block text-blue-deep font-semibold mb-2">
               Intolleranze/Allergie (opzionale)
@@ -419,7 +437,7 @@ export default function AddChildModal({
             )}
 
             <p className="text-gray-500 text-xs mt-2">
-              💡 Puoi inserire più intolleranze separate da virgola (es: "lattosio, glutine") oppure una alla volta premendo +
+              💡 Puoi inserire più intolleranze separate da virgola (es: "Lattosio, Glutine")
             </p>
           </div>
 
@@ -428,14 +446,11 @@ export default function AddChildModal({
             <div className="flex items-start gap-3">
               <AlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
               <div className="text-sm text-gray-700">
-                <p className="font-semibold mb-1">ℹ️ Informazioni importanti:</p>
-                <ul className="space-y-1 text-xs">
-                  <li>• Il Codice Fiscale deve essere corretto e univoco</li>
-                  <li>• La data di nascita verrà usata per calcolare l'età</li>
-                  <li>• La taglia maglietta serve per la divisa del campo</li>
-                  <li>• Le intolleranze sono importanti per i pasti</li>
-                  <li>• Le intolleranze vengono salvate in formato normalizzato (minuscolo)</li>
-                </ul>
+                <p className="font-semibold mb-1">ℹ️ Nota:</p>
+                <p className="text-xs">
+                  Le intolleranze vengono normalizzate automaticamente (minuscole, senza spazi extra) 
+                  per evitare duplicati.
+                </p>
               </div>
             </div>
           </div>
@@ -461,12 +476,12 @@ export default function AddChildModal({
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                  Registrazione...
+                  Salvataggio...
                 </>
               ) : (
                 <>
-                  <Plus size={20} />
-                  Registra Bambino
+                  <Edit2 size={20} />
+                  Salva Modifiche
                 </>
               )}
             </button>

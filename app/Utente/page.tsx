@@ -8,10 +8,10 @@ import {
   Mail, 
   Phone, 
   MapPin, 
-  Edit2, 
+  Edit2,      // ✨ AGGIUNTO
   Save, 
   X, 
-  Trash2,
+  Trash2,     // ✨ AGGIUNTO
   Users,
   Calendar,
   AlertTriangle,
@@ -22,7 +22,9 @@ import {
   TrendingUp
 } from "lucide-react";
 import AddChildModal from "../components/addChildModal";
+import EditChildModal from "../components/editChildModal";  // ✨ AGGIUNTO
 import ProfileSection from "../components/profileSection";
+import { deleteChild } from "../actions/childrens";  // ✨ AGGIUNTO
 
 type Profile = {
   id: string;
@@ -77,13 +79,13 @@ export default function PaginaUtente() {
   const [enrollments, setEnrollments] = useState<{ [childId: string]: Enrollment[] }>({});
   
   const [editingProfile, setEditingProfile] = useState(false);
-  const [editingChild, setEditingChild] = useState<string | null>(null);
-  const [expandedChild, setExpandedChild] = useState<string | null>(null);
+  const [editingChild, setEditingChild] = useState<Child | null>(null);  // ✨ AGGIUNTO
   
   const [alert, setAlert] = useState<{ msg: string; type: "error" | "success" } | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);  // ✨ AGGIUNTO
 
   const showAlert = (msg: string, type: "error" | "success" = "error") => {
     setAlert({ msg, type });
@@ -159,6 +161,53 @@ export default function PaginaUtente() {
       console.error("Errore caricamento dati:", error);
       showAlert("Errore durante il caricamento dei dati");
       setLoading(false);
+    }
+  };
+
+  // ✨ NUOVA FUNZIONE: Gestisce eliminazione bambino con controlli
+  const handleDeleteChild = async (child: Child) => {
+    // Verifica se ci sono iscrizioni attive
+    const childEnrollments = enrollments[child.id] || [];
+    const activeEnrollments = childEnrollments.filter(e => 
+      new Date(e.camps.data_fine) >= new Date()
+    );
+
+    if (activeEnrollments.length > 0) {
+      showAlert(
+        `❌ Impossibile eliminare: ${child.nome} ha ${activeEnrollments.length} iscrizione/i attiva/e. ` +
+        `Attendi la fine dei campi o contattaci.`,
+        "error"
+      );
+      return;
+    }
+
+    // Conferma eliminazione
+    const confirmed = window.confirm(
+      `⚠️ Sei sicuro di voler eliminare ${child.nome} ${child.cognome}?\n\n` +
+      `Questa azione è IRREVERSIBILE e eliminerà:\n` +
+      `- Tutti i dati del bambino\n` +
+      `- Lo storico delle iscrizioni passate\n\n` +
+      `Confermi l'eliminazione?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const result = await deleteChild(child.id);
+
+      if (result?.error) {
+        showAlert("❌ " + result.error, "error");
+        return;
+      }
+
+      showAlert(`✅ ${child.nome} eliminato con successo`, "success");
+      
+      // Ricarica i dati
+      if (profile?.id) {
+        await loadUserData(profile.id);
+      }
+    } catch (error: any) {
+      showAlert("❌ Errore durante l'eliminazione: " + error.message, "error");
     }
   };
 
@@ -284,7 +333,7 @@ export default function PaginaUtente() {
       {/* Alert */}
       {alert && (
         <div
-          className={`fixed z-50 top-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg font-semibold shadow-xl ${
+          className={`fixed z-60 top-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg font-semibold shadow-xl ${
             alert.type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
           }`}
         >
@@ -311,10 +360,10 @@ export default function PaginaUtente() {
         </div>
 
         <ProfileSection 
-  profile={profile} 
-  onProfileUpdate={() => loadUserData(profile.id)}
-  showAlert={showAlert}
-/>
+          profile={profile} 
+          onProfileUpdate={() => loadUserData(profile.id)}
+          showAlert={showAlert}
+        />
 
         {/* Sezione Figli */}
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
@@ -348,13 +397,10 @@ export default function PaginaUtente() {
                   const activeEnrollments = childEnrollments.filter(e => 
                     new Date(e.camps.data_fine) >= new Date()
                   );
-                  const pastEnrollments = childEnrollments.filter(e => 
-                    new Date(e.camps.data_fine) < new Date()
-                  );
 
                   return (
                     <div key={child.id} className="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-cyan-300 transition-all">
-                      {/* Header Bambino con Pulsante Iscrizione */}
+                      {/* Header Bambino con Pulsanti */}
                       <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           {/* Info Bambino */}
@@ -380,9 +426,9 @@ export default function PaginaUtente() {
                             </p>
                           </div>
 
-                          {/* Pulsanti Azioni */}
-                          <div className="flex gap-2">
-                            {/* PULSANTE NUOVA ISCRIZIONE - Accanto ad ogni bambino */}
+                          {/* ✨ PULSANTI AGGIORNATI */}
+                          <div className="flex gap-2 flex-wrap">
+                            {/* PULSANTE NUOVA ISCRIZIONE */}
                             <button
                               onClick={() => router.push(`/Iscrizione?child=${child.id}`)}
                               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 
@@ -392,13 +438,27 @@ export default function PaginaUtente() {
                               Nuova Iscrizione
                             </button>
 
+                            {/* ✨ NUOVO: PULSANTE MODIFICA */}
                             <button
-                              onClick={() => setExpandedChild(expandedChild === child.id ? null : child.id)}
+                              onClick={() => {
+                                setEditingChild(child);
+                                setShowEditModal(true);
+                              }}
                               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 
                                 transition-all flex items-center gap-2 font-semibold"
                             >
-                              {expandedChild === child.id ? <Eye size={18} /> : <FileText size={18} />}
-                              {expandedChild === child.id ? "Nascondi" : "Dettagli"}
+                              <Edit2 size={18} />
+                              Modifica
+                            </button>
+
+                            {/* ✨ NUOVO: PULSANTE ELIMINA */}
+                            <button
+                              onClick={() => handleDeleteChild(child)}
+                              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 
+                                transition-all flex items-center gap-2 font-semibold"
+                            >
+                              <Trash2 size={18} />
+                              Elimina
                             </button>
                           </div>
                         </div>
@@ -421,72 +481,6 @@ export default function PaginaUtente() {
                           </div>
                         )}
                       </div>
-
-                      {/* Dettagli Espansi */}
-                      {expandedChild === child.id && (
-                        <div className="p-6 bg-white border-t-2 border-gray-100">
-                          {/* Dati Completi Bambino */}
-                          <div className="mb-6">
-                            <h4 className="font-semibold text-blue-deep mb-3">Informazioni Complete</h4>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <span className="text-gray-600">Codice Fiscale:</span>
-                                <p className="font-semibold uppercase">{child.cf}</p>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">Taglia Maglietta:</span>
-                                <p className="font-semibold">{child.taglia_maglietta}</p>
-                              </div>
-                              {child.intolleranze.length > 0 && (
-                                <div className="col-span-2">
-                                  <span className="text-gray-600">Intolleranze/Allergie:</span>
-                                  <div className="flex flex-wrap gap-2 mt-2">
-                                    {child.intolleranze.map((int, idx) => (
-                                      <span key={idx} className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-semibold">
-                                        {int}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Storico Iscrizioni */}
-                          {pastEnrollments.length > 0 && (
-                            <div>
-                              <h4 className="font-semibold text-blue-deep mb-3">Storico Iscrizioni</h4>
-                              <div className="space-y-2">
-                                {pastEnrollments.map((enrollment) => (
-                                  <div key={enrollment.id} className="bg-gray-50 rounded-lg p-4 text-sm">
-                                    <div className="flex justify-between items-start mb-2">
-                                      <div>
-                                        <p className="font-semibold text-gray-800">{enrollment.camps.nome}</p>
-                                        <p className="text-gray-600 text-xs">
-                                          {formatDate(enrollment.camps.data_inizio)} - {formatDate(enrollment.camps.data_fine)}
-                                        </p>
-                                        <p className="text-gray-600 text-xs">
-                                          {enrollment.camps.indirizzo_via}, {enrollment.camps.indirizzo_paese}
-                                        </p>
-                                      </div>
-                                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                        enrollment.saldata 
-                                          ? 'bg-green-100 text-green-700' 
-                                          : 'bg-orange-100 text-orange-700'
-                                      }`}>
-                                        {enrollment.saldata ? 'Saldata' : 'Parziale'}
-                                      </span>
-                                    </div>
-                                    <div className="text-xs text-gray-600">
-                                      Pagato: €{enrollment.importo_pagato.toFixed(2)} / €{enrollment.prezzo_totale.toFixed(2)}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -555,7 +549,6 @@ export default function PaginaUtente() {
               <button
                 onClick={async () => {
                   try {
-                    // Implementa la logica di reset password
                     showAlert("Link inviato alla tua email", "success");
                     setShowPasswordModal(false);
                   } catch (error) {
@@ -634,6 +627,22 @@ export default function PaginaUtente() {
       <AddChildModal
         isOpen={showAddChildModal}
         onClose={() => setShowAddChildModal(false)}
+        onSuccess={() => {
+          if (profile?.id) {
+            loadUserData(profile.id);
+          }
+        }}
+        showAlert={showAlert}
+      />
+
+      {/* ✨ NUOVO: Modal Modifica Bambino */}
+      <EditChildModal
+        isOpen={showEditModal}
+        child={editingChild}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingChild(null);
+        }}
         onSuccess={() => {
           if (profile?.id) {
             loadUserData(profile.id);
