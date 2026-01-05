@@ -18,8 +18,11 @@ import {
   Eye,
   EyeOff,
   Plus,
-  FileText
+  FileText,
+  TrendingUp
 } from "lucide-react";
+import AddChildModal from "../components/addChildModal";
+import ProfileSection from "../components/profileSection";
 
 type Profile = {
   id: string;
@@ -42,9 +45,8 @@ type Child = {
   cognome: string;
   data_nascita: string;
   cf: string;
-  sesso: string;
-  allergie?: string;
-  note_mediche?: string;
+  taglia_maglietta: string;
+  intolleranze: string[];
   parent_id: string;
 };
 
@@ -81,6 +83,7 @@ export default function PaginaUtente() {
   const [alert, setAlert] = useState<{ msg: string; type: "error" | "success" } | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAddChildModal, setShowAddChildModal] = useState(false);
 
   const showAlert = (msg: string, type: "error" | "success" = "error") => {
     setAlert({ msg, type });
@@ -307,199 +310,11 @@ export default function PaginaUtente() {
           </div>
         </div>
 
-        {/* Dati Personali */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-blue-deep flex items-center gap-2">
-              <User size={24} />
-              Dati Personali
-            </h2>
-            {!editingProfile ? (
-              <button
-                onClick={() => setEditingProfile(true)}
-                className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 
-                  transition-all flex items-center gap-2 font-semibold"
-              >
-                <Edit2 size={18} />
-                Modifica
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={handleUpdateProfile}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 
-                    transition-all flex items-center gap-2 font-semibold"
-                >
-                  <Save size={18} />
-                  Salva
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingProfile(false);
-                    loadUserData(profile.id);
-                  }}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 
-                    transition-all flex items-center gap-2 font-semibold"
-                >
-                  <X size={18} />
-                  Annulla
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Nome */}
-            <div>
-              <label className="block text-gray-600 text-sm font-semibold mb-2">Nome</label>
-              {editingProfile ? (
-                <input
-                  type="text"
-                  value={profile.nome}
-                  onChange={(e) => setProfile({ ...profile, nome: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
-                />
-              ) : (
-                <p className="text-gray-800 font-medium">{profile.nome}</p>
-              )}
-            </div>
-
-            {/* Cognome */}
-            <div>
-              <label className="block text-gray-600 text-sm font-semibold mb-2">Cognome</label>
-              {editingProfile ? (
-                <input
-                  type="text"
-                  value={profile.cognome}
-                  onChange={(e) => setProfile({ ...profile, cognome: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
-                />
-              ) : (
-                <p className="text-gray-800 font-medium">{profile.cognome}</p>
-              )}
-            </div>
-
-            {/* Email (non modificabile direttamente) */}
-            <div>
-              <label className="block text-gray-600 text-sm font-semibold mb-2 flex items-center gap-2">
-                <Mail size={16} />
-                Email Account
-              </label>
-              <div className="flex items-center gap-2">
-                <p className="text-gray-800 font-medium">{profile.email}</p>
-                <button
-                  onClick={() => setShowPasswordModal(true)}
-                  className="text-cyan-600 text-sm hover:underline"
-                >
-                  Modifica
-                </button>
-              </div>
-            </div>
-
-            {/* Codice Fiscale (non modificabile) */}
-            <div>
-              <label className="block text-gray-600 text-sm font-semibold mb-2">Codice Fiscale</label>
-              <p className="text-gray-800 font-medium uppercase">{profile.cf}</p>
-            </div>
-
-            {/* Telefono */}
-            <div>
-              <label className="block text-gray-600 text-sm font-semibold mb-2 flex items-center gap-2">
-                <Phone size={16} />
-                Telefono
-              </label>
-              {editingProfile ? (
-                <input
-                  type="tel"
-                  value={profile.telefono}
-                  onChange={(e) => setProfile({ ...profile, telefono: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
-                />
-              ) : (
-                <p className="text-gray-800 font-medium">{profile.telefono}</p>
-              )}
-            </div>
-
-            {/* Email Contatti */}
-            <div>
-              <label className="block text-gray-600 text-sm font-semibold mb-2 flex items-center gap-2">
-                <Mail size={16} />
-                Email Contatti
-              </label>
-              {editingProfile ? (
-                <input
-                  type="email"
-                  value={profile.email_contatti}
-                  onChange={(e) => setProfile({ ...profile, email_contatti: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
-                />
-              ) : (
-                <p className="text-gray-800 font-medium">{profile.email_contatti}</p>
-              )}
-            </div>
-
-            {/* Indirizzo */}
-            <div className="md:col-span-2">
-              <label className="block text-gray-600 text-sm font-semibold mb-2 flex items-center gap-2">
-                <MapPin size={16} />
-                Indirizzo
-              </label>
-              {editingProfile ? (
-                <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4 mb-4">
-                  <input
-                    type="text"
-                    value={profile.indirizzo_via}
-                    onChange={(e) => setProfile({ ...profile, indirizzo_via: e.target.value })}
-                    placeholder="Via/Piazza"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
-                  />
-                  <input
-                    type="text"
-                    value={profile.indirizzo_civico}
-                    onChange={(e) => setProfile({ ...profile, indirizzo_civico: e.target.value })}
-                    placeholder="Civico"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
-                  />
-                </div>
-              ) : (
-                <p className="text-gray-800 font-medium mb-2">
-                  {profile.indirizzo_via} {profile.indirizzo_civico}
-                </p>
-              )}
-              
-              {editingProfile ? (
-                <div className="grid grid-cols-3 gap-4">
-                  <input
-                    type="text"
-                    value={profile.indirizzo_cap}
-                    onChange={(e) => setProfile({ ...profile, indirizzo_cap: e.target.value })}
-                    placeholder="CAP"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
-                  />
-                  <input
-                    type="text"
-                    value={profile.indirizzo_paese}
-                    onChange={(e) => setProfile({ ...profile, indirizzo_paese: e.target.value })}
-                    placeholder="Comune"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black"
-                  />
-                  <input
-                    type="text"
-                    value={profile.indirizzo_provincia}
-                    onChange={(e) => setProfile({ ...profile, indirizzo_provincia: e.target.value.toUpperCase() })}
-                    placeholder="Prov."
-                    maxLength={2}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-600 text-black uppercase"
-                  />
-                </div>
-              ) : (
-                <p className="text-gray-800 font-medium">
-                  {profile.indirizzo_cap} {profile.indirizzo_paese} ({profile.indirizzo_provincia})
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
+        <ProfileSection 
+  profile={profile} 
+  onProfileUpdate={() => loadUserData(profile.id)}
+  showAlert={showAlert}
+/>
 
         {/* Sezione Figli */}
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
@@ -508,149 +323,187 @@ export default function PaginaUtente() {
               <Users size={24} />
               I Miei Figli ({children.length})
             </h2>
-            <button
-              onClick={() => router.push("/Iscrizione")}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 
-                transition-all flex items-center gap-2 font-semibold"
-            >
-              <Plus size={18} />
-              Nuova Iscrizione
-            </button>
           </div>
 
           {children.length === 0 ? (
+            /* NESSUN BAMBINO: Solo pulsante registra */
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <Users className="mx-auto mb-4 text-gray-400" size={48} />
               <p className="text-gray-600 mb-4">Non hai ancora registrato nessun bambino</p>
               <button
-                onClick={() => router.push("/Iscrizione")}
-                className="bg-cyan-600 text-white px-6 py-3 rounded-lg hover:bg-cyan-700 transition-all"
+                onClick={() => setShowAddChildModal(true)}
+                className="bg-cyan-600 text-white px-6 py-3 rounded-lg hover:bg-cyan-700 
+                  transition-all flex items-center justify-center gap-2 mx-auto font-semibold"
               >
-                Registra il primo bambino
+                <Plus size={20} />
+                Registra il Primo Bambino
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {children.map((child) => {
-                const childEnrollments = enrollments[child.id] || [];
-                const activeEnrollments = childEnrollments.filter(e => 
-                  new Date(e.camps.data_fine) >= new Date()
-                );
-                const pastEnrollments = childEnrollments.filter(e => 
-                  new Date(e.camps.data_fine) < new Date()
-                );
+            /* CI SONO BAMBINI: Mostra lista + pulsante iscrizione per ognuno */
+            <>
+              <div className="space-y-4 mb-6">
+                {children.map((child) => {
+                  const childEnrollments = enrollments[child.id] || [];
+                  const activeEnrollments = childEnrollments.filter(e => 
+                    new Date(e.camps.data_fine) >= new Date()
+                  );
+                  const pastEnrollments = childEnrollments.filter(e => 
+                    new Date(e.camps.data_fine) < new Date()
+                  );
 
-                return (
-                  <div key={child.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                    {/* Header Bambino */}
-                    <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-xl font-bold text-blue-deep mb-1">
-                            {child.nome} {child.cognome}
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            {calculateAge(child.data_nascita)} anni • Nato il {formatDate(child.data_nascita)}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => setExpandedChild(expandedChild === child.id ? null : child.id)}
-                          className="bg-white text-blue-deep px-4 py-2 rounded-lg hover:bg-gray-50 
-                            transition-all flex items-center gap-2 font-semibold"
-                        >
-                          {expandedChild === child.id ? <Eye size={18} /> : <FileText size={18} />}
-                          {expandedChild === child.id ? "Nascondi" : "Dettagli"}
-                        </button>
-                      </div>
-
-                      {/* Iscrizioni Attive (sempre visibili) */}
-                      {activeEnrollments.length > 0 && (
-                        <div className="mt-4 bg-white rounded-lg p-4">
-                          <p className="font-semibold text-green-600 mb-2 flex items-center gap-2">
-                            <Calendar size={16} />
-                            Iscrizioni Attive: {activeEnrollments.length}
-                          </p>
-                          {activeEnrollments.map((enrollment) => (
-                            <div key={enrollment.id} className="text-sm text-gray-700 mb-2 last:mb-0">
-                              • {enrollment.camps.nome} ({formatDate(enrollment.camps.data_inizio)} - {formatDate(enrollment.camps.data_fine)})
-                              <span className={`ml-2 font-semibold ${enrollment.saldata ? 'text-green-600' : 'text-orange-600'}`}>
-                                {enrollment.saldata ? '✓ Saldata' : `€${enrollment.importo_pagato}/${enrollment.prezzo_totale}`}
+                  return (
+                    <div key={child.id} className="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-cyan-300 transition-all">
+                      {/* Header Bambino con Pulsante Iscrizione */}
+                      <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          {/* Info Bambino */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-xl font-bold text-blue-deep">
+                                {child.nome} {child.cognome}
+                              </h3>
+                              <span className="bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                {calculateAge(child.data_nascita)} anni
                               </span>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                            <p className="text-gray-600 text-sm mb-2">
+                              Nato il {formatDate(child.data_nascita)} • CF: {child.cf}
+                            </p>
+                            <p className="text-gray-600 text-sm">
+                              Taglia: {child.taglia_maglietta}
+                              {child.intolleranze.length > 0 && (
+                                <span className="ml-3 text-orange-600 font-semibold">
+                                  ⚠️ Intolleranze: {child.intolleranze.join(", ")}
+                                </span>
+                              )}
+                            </p>
+                          </div>
 
-                    {/* Dettagli Espansi */}
-                    {expandedChild === child.id && (
-                      <div className="p-6 bg-white">
-                        {/* Dati Bambino */}
-                        <div className="mb-6">
-                          <h4 className="font-semibold text-blue-deep mb-3">Informazioni Personali</h4>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="text-gray-600">Codice Fiscale:</span>
-                              <p className="font-semibold uppercase">{child.cf}</p>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">Sesso:</span>
-                              <p className="font-semibold">{child.sesso === 'M' ? 'Maschio' : 'Femmina'}</p>
-                            </div>
-                            {child.allergie && (
-                              <div className="col-span-2">
-                                <span className="text-gray-600">Allergie/Intolleranze:</span>
-                                <p className="font-semibold text-orange-600">{child.allergie}</p>
-                              </div>
-                            )}
-                            {child.note_mediche && (
-                              <div className="col-span-2">
-                                <span className="text-gray-600">Note Mediche:</span>
-                                <p className="font-semibold">{child.note_mediche}</p>
-                              </div>
-                            )}
+                          {/* Pulsanti Azioni */}
+                          <div className="flex gap-2">
+                            {/* PULSANTE NUOVA ISCRIZIONE - Accanto ad ogni bambino */}
+                            <button
+                              onClick={() => router.push(`/Iscrizione?child=${child.id}`)}
+                              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 
+                                transition-all flex items-center gap-2 font-semibold whitespace-nowrap"
+                            >
+                              <TrendingUp size={18} />
+                              Nuova Iscrizione
+                            </button>
+
+                            <button
+                              onClick={() => setExpandedChild(expandedChild === child.id ? null : child.id)}
+                              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 
+                                transition-all flex items-center gap-2 font-semibold"
+                            >
+                              {expandedChild === child.id ? <Eye size={18} /> : <FileText size={18} />}
+                              {expandedChild === child.id ? "Nascondi" : "Dettagli"}
+                            </button>
                           </div>
                         </div>
 
-                        {/* Storico Iscrizioni */}
-                        {pastEnrollments.length > 0 && (
-                          <div className="mb-4">
-                            <h4 className="font-semibold text-blue-deep mb-3">Storico Iscrizioni</h4>
-                            <div className="space-y-2">
-                              {pastEnrollments.map((enrollment) => (
-                                <div key={enrollment.id} className="bg-gray-50 rounded-lg p-4 text-sm">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                      <p className="font-semibold text-gray-800">{enrollment.camps.nome}</p>
-                                      <p className="text-gray-600 text-xs">
-                                        {formatDate(enrollment.camps.data_inizio)} - {formatDate(enrollment.camps.data_fine)}
-                                      </p>
-                                      <p className="text-gray-600 text-xs">
-                                        {enrollment.camps.indirizzo_via}, {enrollment.camps.indirizzo_paese}
-                                      </p>
-                                    </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                      enrollment.saldata 
-                                        ? 'bg-green-100 text-green-700' 
-                                        : 'bg-orange-100 text-orange-700'
-                                    }`}>
-                                      {enrollment.saldata ? 'Saldata' : 'Parziale'}
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-gray-600">
-                                    Pagato: €{enrollment.importo_pagato.toFixed(2)} / €{enrollment.prezzo_totale.toFixed(2)}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                        {/* Iscrizioni Attive (sempre visibili) */}
+                        {activeEnrollments.length > 0 && (
+                          <div className="mt-4 bg-white rounded-lg p-4">
+                            <p className="font-semibold text-green-600 mb-2 flex items-center gap-2">
+                              <Calendar size={16} />
+                              Iscrizioni Attive: {activeEnrollments.length}
+                            </p>
+                            {activeEnrollments.map((enrollment) => (
+                              <div key={enrollment.id} className="text-sm text-gray-700 mb-2 last:mb-0">
+                                • {enrollment.camps.nome} ({formatDate(enrollment.camps.data_inizio)} - {formatDate(enrollment.camps.data_fine)})
+                                <span className={`ml-2 font-semibold ${enrollment.saldata ? 'text-green-600' : 'text-orange-600'}`}>
+                                  {enrollment.saldata ? '✓ Saldata' : `€${enrollment.importo_pagato}/${enrollment.prezzo_totale}`}
+                                </span>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+
+                      {/* Dettagli Espansi */}
+                      {expandedChild === child.id && (
+                        <div className="p-6 bg-white border-t-2 border-gray-100">
+                          {/* Dati Completi Bambino */}
+                          <div className="mb-6">
+                            <h4 className="font-semibold text-blue-deep mb-3">Informazioni Complete</h4>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-600">Codice Fiscale:</span>
+                                <p className="font-semibold uppercase">{child.cf}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Taglia Maglietta:</span>
+                                <p className="font-semibold">{child.taglia_maglietta}</p>
+                              </div>
+                              {child.intolleranze.length > 0 && (
+                                <div className="col-span-2">
+                                  <span className="text-gray-600">Intolleranze/Allergie:</span>
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {child.intolleranze.map((int, idx) => (
+                                      <span key={idx} className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                        {int}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Storico Iscrizioni */}
+                          {pastEnrollments.length > 0 && (
+                            <div>
+                              <h4 className="font-semibold text-blue-deep mb-3">Storico Iscrizioni</h4>
+                              <div className="space-y-2">
+                                {pastEnrollments.map((enrollment) => (
+                                  <div key={enrollment.id} className="bg-gray-50 rounded-lg p-4 text-sm">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div>
+                                        <p className="font-semibold text-gray-800">{enrollment.camps.nome}</p>
+                                        <p className="text-gray-600 text-xs">
+                                          {formatDate(enrollment.camps.data_inizio)} - {formatDate(enrollment.camps.data_fine)}
+                                        </p>
+                                        <p className="text-gray-600 text-xs">
+                                          {enrollment.camps.indirizzo_via}, {enrollment.camps.indirizzo_paese}
+                                        </p>
+                                      </div>
+                                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                        enrollment.saldata 
+                                          ? 'bg-green-100 text-green-700' 
+                                          : 'bg-orange-100 text-orange-700'
+                                      }`}>
+                                        {enrollment.saldata ? 'Saldata' : 'Parziale'}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      Pagato: €{enrollment.importo_pagato.toFixed(2)} / €{enrollment.prezzo_totale.toFixed(2)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* PULSANTE REGISTRA ALTRO BAMBINO - Sotto tutti i bambini */}
+              <div className="text-center pt-4 border-t-2 border-gray-200">
+                <button
+                  onClick={() => setShowAddChildModal(true)}
+                  className="bg-cyan-600 text-white px-6 py-3 rounded-lg hover:bg-cyan-700 
+                    transition-all flex items-center justify-center gap-2 mx-auto font-semibold"
+                >
+                  <Plus size={20} />
+                  Registra Altro Bambino
+                </button>
+              </div>
+            </>
           )}
         </div>
 
@@ -776,6 +629,18 @@ export default function PaginaUtente() {
           </div>
         </div>
       )}
+
+      {/* Modal Registra Bambino */}
+      <AddChildModal
+        isOpen={showAddChildModal}
+        onClose={() => setShowAddChildModal(false)}
+        onSuccess={() => {
+          if (profile?.id) {
+            loadUserData(profile.id);
+          }
+        }}
+        showAlert={showAlert}
+      />
     </main>
   );
 }
