@@ -14,4 +14,4 @@ jobs:
         # curl fa una richiesta reale.
         # -f fa fallire l'azione se il sito risponde 404 o 500 (così ti arriva la notifica di errore)
         # -L segue eventuali redirect
-        run: curl -f -L https://www.sportessence.it/api/keep-alive
+        run: curl -f -L https://www.sportessence.it/api/keepalive
