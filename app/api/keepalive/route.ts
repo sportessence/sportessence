@@ -1,56 +1,41 @@
-import { createClient } from '@/app/utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-export async function GET(request: Request) {
-  // Verifica che la richiesta provenga da una fonte autorizzata (opzionale ma consigliato)
-  const authHeader = request.headers.get('authorization')
-  
-  // Aggiungi un secret per sicurezza (opzionale)
-  // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-  //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  // }
+// 1. FONDAMENTALE: Disabilita la cache di Vercel
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
+export async function GET(request: Request) {
   try {
-    const supabase = await createClient()
+    // 2. Client "Stupido" e Diretto (senza cookie, senza sessioni utente)
+    // Usa le chiavi pubbliche, tanto dobbiamo solo leggere la tabella camps che è pubblica
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     
-    // Fai una query semplice per "svegliare" il database
-    const { data, error } = await supabase
+    // 3. La Query Sveglia
+    // head: true significa "non scaricare i dati, conta solo le righe". È velocissimo ma sveglia il DB.
+    const { count, error } = await supabase
       .from('camps')
-      .select('id')
-      .limit(1)
+      .select('*', { count: 'exact', head: true })
 
     if (error) {
-      console.error('Keepalive error:', error)
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: error.message,
-          timestamp: new Date().toISOString()
-        }, 
-        { status: 500 }
-      )
+      console.error('❌ Keepalive error:', error.message)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    console.log('✅ Database keepalive successful')
+    console.log('✅ Database keepalive successful. Rows:', count)
+    
     return NextResponse.json({ 
       success: true, 
-      message: 'Database is alive',
+      message: 'Database svegliato con successo',
+      rows: count,
       timestamp: new Date().toISOString()
     })
     
   } catch (error) {
-    console.error('Keepalive exception:', error)
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Internal server error',
-        timestamp: new Date().toISOString()
-      }, 
-      { status: 500 }
-    )
+    console.error('❌ Keepalive critical error:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
-}
-
-export async function POST(request: Request) {
-  return GET(request)
 }
