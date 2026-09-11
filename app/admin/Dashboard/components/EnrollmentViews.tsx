@@ -1,9 +1,12 @@
 "use client";
 
 import React from "react";
-import { Calendar, CreditCard, Edit, Trash2, ChevronDown, ChevronUp, Baby, AlertTriangle, User } from "lucide-react";
+import { Calendar, CreditCard, Edit, Trash2, ChevronDown, ChevronUp, Baby, AlertTriangle, User, Mail } from "lucide-react";
 
-export const EnrollmentDetails = ({ enrollment, onPay, onEdit, onDelete }: any) => (
+export const EnrollmentDetails = ({ enrollment, onPay, onEdit, onDelete, onSendReminder }: any) => {
+  const isPaid = ((enrollment.pagato || 0) + 0.1) >= (enrollment.prezzo_totale || 0);
+
+  return (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
@@ -45,24 +48,31 @@ export const EnrollmentDetails = ({ enrollment, onPay, onEdit, onDelete }: any) 
           </div>
         </div>
         
-        <div className="flex gap-2">
-          <button onClick={(e) => { e.stopPropagation(); onPay(enrollment); }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-all font-bold text-xs shadow-sm shadow-green-100">
-            <CreditCard size={14}/> Paga
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); onEdit(enrollment); }} className="px-3 py-2.5 bg-white text-gray-600 hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors shadow-sm">
-            <Edit size={16}/>
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(enrollment); }} className="px-3 py-2.5 bg-white text-red-500 hover:bg-red-50 rounded-lg border border-red-100 transition-colors shadow-sm">
-            <Trash2 size={16}/>
-          </button>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <button onClick={(e) => { e.stopPropagation(); onPay(enrollment); }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-all font-bold text-xs shadow-sm shadow-green-100">
+              <CreditCard size={14}/> Paga
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); onEdit(enrollment); }} className="px-3 py-2.5 bg-white text-gray-600 hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors shadow-sm">
+              <Edit size={16}/>
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); onDelete(enrollment); }} className="px-3 py-2.5 bg-white text-red-500 hover:bg-red-50 rounded-lg border border-red-100 transition-colors shadow-sm">
+              <Trash2 size={16}/>
+            </button>
+          </div>
+          {!isPaid && (
+            <button onClick={(e) => { e.stopPropagation(); onSendReminder(enrollment); }} className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-500 text-white hover:bg-amber-600 rounded-lg transition-all font-bold text-xs shadow-sm shadow-amber-100">
+              <Mail size={14}/> Manda Sollecito
+            </button>
+          )}
         </div>
       </div>
       <p className="text-[10px] text-gray-400 italic text-center px-4">Iscrizione creata il {new Date(enrollment.created_at).toLocaleString('it-IT')}</p>
     </div>
   </div>
-);
+)};
 
-export const EnrollmentTable = ({ data, expandedRows, onToggleRow, onOpenChild, onOpenParent, onPay, onEdit, onDelete }: any) => (
+export const EnrollmentTable = ({ data, expandedRows, onToggleRow, onOpenChild, onOpenParent, onPay, onEdit, onDelete, onSendReminder }: any) => (
   <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
     <table className="w-full text-left text-sm">
       <thead className="bg-gray-100 border-b border-gray-200">
@@ -120,7 +130,7 @@ export const EnrollmentTable = ({ data, expandedRows, onToggleRow, onOpenChild, 
               {isExpanded && (
                 <tr className="bg-gray-50 border-t border-gray-200 shadow-inner">
                   <td colSpan={7} className="p-6">
-                    <EnrollmentDetails enrollment={enrollment} onPay={onPay} onEdit={onEdit} onDelete={onDelete} />
+                    <EnrollmentDetails enrollment={enrollment} onPay={onPay} onEdit={onEdit} onDelete={onDelete} onSendReminder={onSendReminder} />
                   </td>
                 </tr>
               )}
@@ -132,7 +142,7 @@ export const EnrollmentTable = ({ data, expandedRows, onToggleRow, onOpenChild, 
   </div>
 );
 
-export const EnrollmentCards = ({ data, expandedRows, onToggleRow, onOpenChild, onOpenParent, onPay, onEdit, onDelete }: any) => (
+export const EnrollmentCards = ({ data, expandedRows, onToggleRow, onOpenChild, onOpenParent, onPay, onEdit, onDelete, onSendReminder }: any) => (
   <div className="md:hidden space-y-4">
     {data.map((enrollment: any) => {
       const isPaid = ((enrollment.pagato || 0) + 0.1) >= (enrollment.prezzo_totale || 0);
@@ -169,7 +179,7 @@ export const EnrollmentCards = ({ data, expandedRows, onToggleRow, onOpenChild, 
           </div>
           {isExpanded && (
             <div className="bg-gray-50 border-t border-gray-200 p-4 animate-in slide-in-from-top-2 duration-200">
-              <EnrollmentDetails enrollment={enrollment} onPay={onPay} onEdit={onEdit} onDelete={onDelete} />
+              <EnrollmentDetails enrollment={enrollment} onPay={onPay} onEdit={onEdit} onDelete={onDelete} onSendReminder={onSendReminder} />
             </div>
           )}
         </div>

@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { Search, X, FolderPlus, Download, Users, Loader2 } from "lucide-react";
 import { pdf } from '@react-pdf/renderer';
 
-import { registerPayment, updateEnrollmentDetails, deleteEnrollment } from "../actions";
+import { registerPayment, updateEnrollmentDetails, deleteEnrollment, sendReminderEmail } from "../actions";
 import { PresenzePDF } from '../../components/PresenzePDF'; 
 
 import { ContattiPDF } from './components/ContattiPDF';
 import { DashboardStats } from './components/DashboardStats';
 import { EnrollmentTable, EnrollmentCards } from './components/EnrollmentViews';
-import { ChildModal, ParentModal, PaymentModal, EditModal, DeleteModal } from './components/Modals';
+import { ChildModal, ParentModal, PaymentModal, EditModal, DeleteModal, ReminderConfirmModal, SuccessModal } from './components/Modals';
 import { WizardModal } from './components/WizardModal';
 
 type DashboardProps = {
@@ -30,9 +30,11 @@ export default function AdminDashboardClient({ enrollments, camps, weeks, profil
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const [activeModal, setActiveModal] = useState<{
-    type: 'PAYMENT' | 'EDIT' | 'CHILD' | 'PARENT' | 'DELETE' | 'WIZARD' | null,
+    type: 'PAYMENT' | 'EDIT' | 'CHILD' | 'PARENT' | 'DELETE' | 'WIZARD' | 'REMINDER' | null,
     enrollmentId: string | null,
   }>({ type: null, enrollmentId: null });
+
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [filters, setFilters] = useState({ campId: "ALL", weekDate: "ALL", status: "ALL", prePost: "ALL" });
   const [editData, setEditData] = useState({ price: 0, campId: "", weeks: [] as any[] });
@@ -153,6 +155,21 @@ export default function AdminDashboardClient({ enrollments, camps, weeks, profil
       const res = await deleteEnrollment(activeModal.enrollmentId);
       if (res.success) { closeModal(); router.refresh(); } else { alert("Errore durante l'eliminazione: " + res.error); }
     } catch (error) { alert("Errore di connessione."); } 
+    finally { setLoadingAction(false); }
+  };
+
+  const executeSendReminder = async () => {
+    if (!activeModal.enrollmentId) return;
+    setLoadingAction(true);
+    try {
+      const res = await sendReminderEmail(activeModal.enrollmentId);
+      if (res.success) { 
+        closeModal();
+        setSuccessMessage("Sollecito inviato con successo!"); 
+      } else { 
+        alert("Errore: " + res.error); 
+      }
+    } catch (error) { alert("Errore di connessione."); }
     finally { setLoadingAction(false); }
   };
 
@@ -310,6 +327,7 @@ export default function AdminDashboardClient({ enrollments, camps, weeks, profil
         onOpenParent={(e: any) => setActiveModal({ type: 'PARENT', enrollmentId: e.id })}
         onPay={(e: any) => setActiveModal({ type: 'PAYMENT', enrollmentId: e.id })}
         onDelete={(e: any) => setActiveModal({ type: 'DELETE', enrollmentId: e.id })}
+        onSendReminder={(e: any) => setActiveModal({ type: 'REMINDER', enrollmentId: e.id })}
         onEdit={(e: any) => {
             const mappedWeeks = (e.enrollment_weeks || []).map((ew: any) => ({ camp_week_id: ew.camp_week_id || ew.camp_weeks?.id, type: ew.type, pre_post: ew.pre_post, computed_price: ew.computed_price || 75 }));
             setEditData({ price: e.prezzo_totale, campId: e.camps?.id, weeks: mappedWeeks });
@@ -322,6 +340,7 @@ export default function AdminDashboardClient({ enrollments, camps, weeks, profil
         onOpenParent={(e: any) => setActiveModal({ type: 'PARENT', enrollmentId: e.id })}
         onPay={(e: any) => setActiveModal({ type: 'PAYMENT', enrollmentId: e.id })}
         onDelete={(e: any) => setActiveModal({ type: 'DELETE', enrollmentId: e.id })}
+        onSendReminder={(e: any) => setActiveModal({ type: 'REMINDER', enrollmentId: e.id })}
         onEdit={(e: any) => {
             const mappedWeeks = (e.enrollment_weeks || []).map((ew: any) => ({ camp_week_id: ew.camp_week_id || ew.camp_weeks?.id, type: ew.type, pre_post: ew.pre_post, computed_price: ew.computed_price || 75 }));
             setEditData({ price: e.prezzo_totale, campId: e.camps?.id, weeks: mappedWeeks });
@@ -337,7 +356,9 @@ export default function AdminDashboardClient({ enrollments, camps, weeks, profil
       {activeModal.type === 'PAYMENT' && <PaymentModal loading={loadingAction} onClose={closeModal} onSubmit={handlePaymentSubmit} />}
       {activeModal.type === 'EDIT' && <EditModal editData={editData} setEditData={setEditData} camps={camps} weeks={weeks} loading={loadingAction} onClose={closeModal} onSubmit={handleEditSubmit} />}
       {activeModal.type === 'DELETE' && <DeleteModal loading={loadingAction} onClose={closeModal} onSubmit={handleDeleteSubmit} />}
-{activeModal.type === 'WIZARD' && (
+      {activeModal.type === 'REMINDER' && <ReminderConfirmModal loading={loadingAction} onClose={closeModal} onSubmit={executeSendReminder} />}
+      {successMessage && <SuccessModal message={successMessage} onClose={() => setSuccessMessage(null)} />}
+      {activeModal.type === 'WIZARD' && (
         <WizardModal 
             profiles={profiles} 
             camps={camps} 

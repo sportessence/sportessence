@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { Resend } from "resend";
 import PaymentConfirmEmail from "../components/emails/ricevutaPronta"; 
+import SollecitoEmail from "../components/emails/SollecitoEmail";
+import { BANK_INFO } from "../utils/bankInfo";
 import { createClient } from '../utils/supabase/server'; // Client Standard (per Auth)
 import { createClient as createAdminClient } from '@supabase/supabase-js'; // Client Admin (per azioni DB)
 
@@ -381,3 +383,80 @@ export async function createAdminEnrollment(data: {
   revalidatePath('/admin');
   return { success: true, enrollmentId: enrollment.id };
 }
+
+// 8. INVIA SOLLECITO DI PAGAMENTO
+export async function sendReminderEmail(enrollmentId: string) {
+  const authCheck = await checkAdminPermissions();
+  if (!authCheck.authorized) return { success: false, error: authCheck.error };
+
+  const supabaseAdmin = getAdminSupabase();
+
+  // FASE 1: Recupero l'iscrizione
+  const { data: enrollment, error: fetchError } = await supabaseAdmin
+    .from('enrollments')
+    .select('id, pagato, prezzo_totale, camp_id, child_id')
+    .eq('id', enrollmentId)
+    .single();
+
+  if (fetchError || !enrollment) {
+    return { success: false, error: "Iscrizione non trovata." };
+  }
+
+  const amountDue = enrollment.prezzo_totale - (enrollment.pagato || 0);
+  if (amountDue <= 0) {
+    return { success: false, error: "Iscrizione già saldata interamente." };
+  }
+
+  // FASE 2: Recupero il Bambino e Genitore
+  const { data: child, error: childError } = await supabaseAdmin
+    .from('children')
+    .select('nome, cognome, parent_id, cf') // Usiamo cf invece di codice_fiscale perché è stato visto in action.ts che la colonna è cf
+    .eq('id', enrollment.child_id)
+    .single();
+
+  if (childError || !child) {
+    return { success: false, error: "Bambino non trovato." };
+  }
+
+  // FASE 3: Recupero info Camp e Profile
+  const [profileRes, campRes] = await Promise.all([
+    supabaseAdmin.from('profiles').select('nome, cognome, email, email_contatti').eq('id', child.parent_id).single(),
+    supabaseAdmin.from('camps').select('nome').eq('id', enrollment.camp_id).single()
+  ]);
+
+  const profile = profileRes.data;
+  const camp = campRes.data;
+
+  if (!profile || !camp) {
+    return { success: false, error: "Dati genitore o campo mancanti." };
+  }
+
+  // FASE 4: Importazione template e invio
+
+  const parentName = `${profile.nome} ${profile.cognome}`;
+  const childName = `${child.nome} ${child.cognome}`;
+  const childCF = child.cf || '---';
+  const emailDestinatario = profile.email_contatti || profile.email;
+  const iban = BANK_INFO.iban;
+
+  try {
+    await resend.emails.send({
+      from: 'SportEssence <noreply@sportessence.it>',
+      to: [emailDestinatario],
+      subject: `Promemoria saldo iscrizione - ${childName}`,
+      react: SollecitoEmail({
+        parentName,
+        childName,
+        childCF,
+        campName: camp.nome,
+        amountDue,
+        iban,
+        reservationId: enrollment.id
+      }) as any,
+    });
+    return { success: true };
+  } catch (emailErr) {
+    console.error("Errore invio email di sollecito:", emailErr);
+    return { success: false, error: "Errore durante l'invio dell'email." };
+  }
+}

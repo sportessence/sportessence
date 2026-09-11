@@ -224,3 +224,40 @@ export const DeleteModal = ({ loading, onClose, onSubmit }: any) => (
     </div>
   </div>
 );
+
+export const ReminderConfirmModal = ({ loading, onClose, onSubmit }: any) => (
+  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200 border-t-4 border-amber-500">
+      <div className="flex flex-col items-center text-center mb-6">
+        <div className="p-3 bg-amber-100 rounded-full text-amber-600 mb-4"><Mail size={32} /></div>
+        <h3 className="text-xl font-bold text-gray-900">Inviare il Sollecito?</h3>
+        <p className="text-sm text-gray-500 mt-2">Verrà inviata in automatico un'email alla famiglia con i dettagli dell'importo mancante e le coordinate bancarie.</p>
+      </div>
+      <div className="flex gap-3">
+        <button onClick={onClose} disabled={loading} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-bold hover:bg-gray-200 transition-colors">Annulla</button>
+        <button onClick={onSubmit} disabled={loading} className="flex-1 py-2.5 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 shadow-md shadow-amber-200 transition-colors flex justify-center items-center gap-2">
+          {loading ? <Loader2 size={18} className="animate-spin"/> : 'Invia Email'}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+export const SuccessModal = ({ message, onClose }: any) => (
+  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200 border-t-4 border-green-500">
+      <div className="flex flex-col items-center text-center mb-6">
+        <div className="p-3 bg-green-100 rounded-full text-green-600 mb-4">
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h3 className="text-xl font-bold text-gray-900">Operazione Completata</h3>
+        <p className="text-sm text-gray-500 mt-2">{message}</p>
+      </div>
+      <button onClick={onClose} className="w-full py-2.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 shadow-md transition-colors">
+        Chiudi
+      </button>
+    </div>
+  </div>
+);
