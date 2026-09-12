@@ -118,7 +118,7 @@ export async function registerPayment(enrollmentId: string, amountToAdd: number)
         const emailDestinatario = profile.email_contatti || profile.email;
 
         await resend.emails.send({
-          from: 'SportEssence <noReply@sportessence.it>',
+          from: 'SportEssence <noreply@sportessence.it>',
           to: [emailDestinatario],
           subject: `Ricevuta saldo finale - ${childName}`,
           react: PaymentConfirmEmail({

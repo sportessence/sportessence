@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { X, Sparkles, ClipboardList, User, Baby, MapPin, Phone, Mail, Euro, Calendar, CheckCircle, Calculator, Tag, ChevronRight, ArrowLeft } from "lucide-react";
 import { createAdminParent, createAdminChild, createAdminEnrollment } from "../../actions";
+import { calculateQuote } from "../../../utils/pricing";
+import { LocalQuote } from "../../../types/iscrizione";
 
 export const WizardModal = ({ profiles, camps, weeks, childrenData, onClose, onSuccess }: any) => {
   const [wizardStep, setWizardStep] = useState(1);
@@ -30,101 +32,50 @@ export const WizardModal = ({ profiles, camps, weeks, childrenData, onClose, onS
   });
   
   const [autoPrice, setAutoPrice] = useState(0);
-
-  // --- MOTORE DI CALCOLO PREZZO ---
-  const getWeekPrice = (camp: any, type: string, pre_post: string, fullWeeksCount: number) => {
-    if (!camp) return 0;
-    const baseFull = camp.prezzo_base_indicativo || 0;
-    const baseHalf = camp.price_half_day || 0;
-    const preBundle = camp.price_pre_post_bundle || 0;
-    const prePrice = camp.price_pre || 0;
-    const postPrice = camp.price_post || 0;
-
-    const tiers = camp.camp_pricing_tiers || [];
-    const activeTier = [...tiers].sort((a: any, b: any) => b.min_weeks - a.min_weeks).find((t: any) => fullWeeksCount >= t.min_weeks);
-
-    let tierBasePrice = activeTier?.price_per_week || baseFull;
-    const discountPercentTier = activeTier?.discount_percent || 0;
-    
-    if (tierBasePrice === 0 && activeTier) {
-        const prevTier = [...tiers].sort((a: any, b: any) => a.min_weeks - b.min_weeks).filter((t: any) => t.min_weeks < activeTier.min_weeks && t.price_per_week > 0).pop();
-        if (prevTier) tierBasePrice = prevTier.price_per_week;
-    }
-    const discountedTierPrice = tierBasePrice * (1 - (discountPercentTier / 100));
-
-    let price = type === 'HALF' ? baseHalf : discountedTierPrice;
-    let extra = 0;
-    if (pre_post === 'BOTH') extra = preBundle || (prePrice + postPrice);
-    else if (pre_post === 'PRE') extra = prePrice;
-    else if (pre_post === 'POST') extra = postPrice;
-
-    return price + extra;
-  };
+  const [currentQuote, setCurrentQuote] = useState<LocalQuote | null>(null);
 
   useEffect(() => {
     const campObj = camps?.find((c: any) => c.id === wizardData.camp_id);
     if (!campObj || wizardData.weeks.length === 0) {
       setAutoPrice(0);
+      setCurrentQuote(null);
       return;
     }
 
-    const fullWeeks = wizardData.weeks.filter(w => w.type === 'FULL');
-    const numFullWeeks = fullWeeks.length;
+    const isCastelloCamp = campObj.nome.toLowerCase().includes("castello");
+    const isMuliniCamp = campObj.nome.toLowerCase().includes("uggiate");
+    const promoValue = isCastelloCamp ? Number(process.env.NEXT_PUBLIC_SCONTO_FEDELI_CANTU || 0.20) : isMuliniCamp ? Number(process.env.NEXT_PUBLIC_SCONTO_FEDELI_MULINI || 0.20) : 0;
+
+    const weekSelections: Record<string, any> = {};
+    const siblingWeekIds = new Set<string>();
     
-    const tiers = campObj.camp_pricing_tiers || [];
-    const activeTierObj = [...tiers].sort((a: any, b: any) => b.min_weeks - a.min_weeks).find((t: any) => numFullWeeks >= t.min_weeks);
-    
-    const baseStandardPrice = campObj.prezzo_base_indicativo || 0;
-    let tierBasePrice = activeTierObj?.price_per_week || baseStandardPrice;
-    const discountPercentTier = activeTierObj?.discount_percent || 0;
-
-    if (tierBasePrice === 0 && activeTierObj) {
-        const prevTier = [...tiers].sort((a: any, b: any) => a.min_weeks - b.min_weeks).filter((t:any) => t.min_weeks < activeTierObj.min_weeks && t.price_per_week > 0).pop();
-        if (prevTier) tierBasePrice = prevTier.price_per_week;
-    }
-
-    const discountedTierPrice = tierBasePrice * (1 - (discountPercentTier / 100));
-
-    let grandTuition = 0;
-    let grandExtras = 0;
-    let grandSiblingDiscount = 0;
-
     wizardData.weeks.forEach(w => {
-        let price = 0; let extra = 0;
-        if (w.type === 'HALF') price = campObj.price_half_day || 0;
-        else {
-            if (isSibling && campObj.sibling_discount_week_price > 0) price = campObj.sibling_discount_week_price;
-            else {
-                price = discountedTierPrice;
-                if (isSibling) {
-                    if (campObj.sibling_discount_value > 0 && campObj.sibling_discount_value <= 1) grandSiblingDiscount += price * campObj.sibling_discount_value;
-                    else if (campObj.sibling_discount_value > 1) grandSiblingDiscount += Number(campObj.sibling_discount_value);
-                }
-            }
-        }
-        if (w.pre_post === 'BOTH') extra = campObj.price_pre_post_bundle || ((campObj.price_pre||0) + (campObj.price_post||0));
-        else if (w.pre_post === 'PRE') extra = campObj.price_pre || 0;
-        else if (w.pre_post === 'POST') extra = campObj.price_post || 0;
-
-        grandTuition += price; grandExtras += extra;
+      weekSelections[w.camp_week_id] = { selected: true, type: w.type, prePost: w.pre_post };
+      if (isSibling) siblingWeekIds.add(w.camp_week_id);
     });
 
-    let grandPromoDiscount = 0;
-    if (isPromo) {
-        const isCastelloCamp = campObj.nome.toLowerCase().includes("castello");
-        const isMuliniCamp = campObj.nome.toLowerCase().includes("uggiate");
-        const promoValue = isCastelloCamp ? Number(process.env.NEXT_PUBLIC_SCONTO_FEDELI_CANTU || 0.20) : isMuliniCamp ? Number(process.env.NEXT_PUBLIC_SCONTO_FEDELI_MULINI || 0.20) : 0;
-        grandPromoDiscount = grandTuition * promoValue;
-    }
+    const quote = calculateQuote({
+      campObj,
+      weekSelections,
+      bookedWeeks: [],
+      bookedWeekIds: [],
+      alreadyBilledAmount: 0,
+      isPromoApplied: isPromo,
+      siblingWeekIds,
+      siblingWeekDates: {},
+      currentPromoValue: promoValue
+    });
 
-    const registrationFee = 15;
-    setAutoPrice(Math.max(0, grandTuition + grandExtras - grandSiblingDiscount - grandPromoDiscount) + registrationFee);
+    setCurrentQuote(quote);
+    setAutoPrice(quote ? quote.total : 0);
   }, [wizardData.weeks, wizardData.camp_id, camps, isSibling, isPromo]);
 
   const applyAutoPrice = () => {
-    const camp = camps?.find((c: any) => c.id === wizardData.camp_id);
-    const fullWeeksCount = wizardData.weeks.filter(w => w.type === 'FULL').length;
-    const updatedWeeks = wizardData.weeks.map(w => ({ ...w, computed_price: getWeekPrice(camp, w.type, w.pre_post, fullWeeksCount) }));
+    if (!currentQuote) return;
+    const updatedWeeks = wizardData.weeks.map(w => {
+      const detail = currentQuote.details.find(d => d.week_id === w.camp_week_id);
+      return { ...w, computed_price: detail ? detail.price + detail.extraPrice : 0 };
+    });
     setWizardData(prev => ({ ...prev, weeks: updatedWeeks, prezzo_totale: autoPrice }));
   };
 

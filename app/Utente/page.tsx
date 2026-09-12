@@ -4,206 +4,17 @@ import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/app/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
-  User, Edit2, Trash2, Users, Calendar, AlertTriangle, 
-  Plus, FileText, TrendingUp, CheckCircle, ChevronDown, ChevronUp
+  User, Users, AlertTriangle, 
+  Plus, CheckCircle, Trash2
 } from "lucide-react";
 import AddChildModal from "../components/addChildModal";
 import EditChildModal from "../components/editChildModal";
 import ProfileSection from "../components/profileSection";
 import { deleteChild, deleteAccount } from "../actions/childrens";
 import DeleteConfirmModal from "../components/deleteConfirmModal"; 
-import BankTransferBox from "../components/BankTransferBox";
+import { ChildCard } from "./components/ChildCard";
+import { Profile, Child, Enrollment } from "../types/iscrizione";
 
-// --- TIPI ---
-type Profile = {
-  id: string; email: string; nome: string; cognome: string; cf: string; telefono: string;
-  email_contatti: string; indirizzo_via: string; indirizzo_civico: string;
-  indirizzo_cap: string; indirizzo_paese: string; indirizzo_provincia: string;
-};
-
-type Child = {
-  id: string; nome: string; cognome: string; data_nascita: string; cf: string;
-  taglia_maglietta: string; intolleranze: string[]; parent_id: string;
-};
-
-type Enrollment = {
-  id: string; child_id: string; camp_id: string; created_at: string;
-  prezzo_totale: number; pagato: number; saldata: boolean; stato: string; 
-  camps: { nome: string; indirizzo_via: string; indirizzo_paese: string; };
-  enrollment_weeks: { camp_weeks: { data_inizio: string; data_fine: string; } }[];
-};
-
-// --- COMPONENTE INTERNO: RIGA ISCRIZIONE ---
-const EnrollmentItem = ({ enrollment, child }: { enrollment: Enrollment; child: Child }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  // Calcoli
-  const daSaldare = enrollment.prezzo_totale - (enrollment.pagato || 0);
-  const isSaldato = daSaldare <= 0;
-  
-  // Date
-  const bookedWeeks = enrollment.enrollment_weeks
-     .map(ew => ew.camp_weeks)
-     .sort((a, b) => a.data_inizio.localeCompare(b.data_inizio));
-  
-  const realStart = bookedWeeks[0]?.data_inizio;
-  const realEnd = bookedWeeks[bookedWeeks.length - 1]?.data_fine;
-  const weeksCount = bookedWeeks.length;
-
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
-
-  return (
-    <div className={`border border-gray-200 rounded-xl bg-gray-50/30 overflow-hidden transition-all duration-300 ${isOpen ? 'shadow-md bg-white border-cyan-100' : ''}`}>
-      {/* Header Riga */}
-      <div 
-        className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center cursor-pointer hover:bg-gray-50 transition-colors gap-4"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <div className="flex-1">
-           <div className="flex items-center gap-3">
-              <p className="font-bold text-blue-deep text-lg">{enrollment.camps.nome}</p>
-              <span className="text-xs bg-white border border-gray-200 px-2 py-0.5 rounded-full text-gray-500 font-medium whitespace-nowrap">
-                 {weeksCount} sett.
-              </span>
-           </div>
-           <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-              <Calendar size={14} className="text-cyan-600"/>
-              {realStart && realEnd ? `${formatDate(realStart)} - ${formatDate(realEnd)}` : "Date da definire"}
-           </p>
-        </div>
-
-        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-           {isSaldato ? (
-              <span className="inline-flex items-center gap-1 text-green-700 bg-green-100 px-3 py-1 rounded-full text-xs font-bold border border-green-200">
-                 <CheckCircle size={12}/> Saldato
-              </span>
-           ) : (
-              <div className="text-right">
-                 <span className="inline-flex items-center gap-1 text-blue-700 bg-blue-100 px-3 py-1 rounded-full text-xs font-bold border border-blue-200 mb-1">
-                    Confermata
-                 </span>
-                 <p className="text-xs text-red-600 font-bold">Da saldare: €{daSaldare.toFixed(2)}</p>
-              </div>
-           )}
-           <div className={`transition-transform duration-300 text-gray-400 ${isOpen ? 'rotate-180 text-cyan-600' : ''}`}>
-              <ChevronDown size={20}/>
-           </div>
-        </div>
-      </div>
-
-      {/* Body Espandibile */}
-      {isOpen && (
-        <div className="p-4 pt-0 border-t border-gray-100 bg-white animate-in slide-in-from-top-2">
-           <div className="mt-4 flex flex-col md:flex-row gap-4 md:gap-8 text-xs text-gray-400 mb-4 pb-4 border-b border-dashed border-gray-100">
-              <span className="flex items-center gap-2">
-                  <FileText size={14}/> Ordine <strong>#{enrollment.id.slice(0,8).toUpperCase()}</strong>
-              </span>
-              <span>Data: {new Date(enrollment.created_at).toLocaleDateString()}</span>
-              <span>Totale: €{enrollment.prezzo_totale.toFixed(2)} (Pagato: €{enrollment.pagato.toFixed(2)})</span>
-           </div>
-
-           {!isSaldato && (
-              <BankTransferBox 
-                amount={daSaldare}
-                childName={child.nome}
-                childSurname={child.cognome}
-                childCF={child.cf}
-                campName={enrollment.camps.nome}
-                reservationId={enrollment.id}
-              />
-           )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// --- COMPONENTE INTERNO: CARD BAMBINO ---
-const ChildCard = ({ child, enrollments, onEdit, onDelete, onRegister }: any) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const activeEnrollments = enrollments || [];
-  
-  const calculateAge = (birthDate: string) => {
-    const diff = Date.now() - new Date(birthDate).getTime();
-    return Math.abs(new Date(diff).getUTCFullYear() - 1970);
-  };
-
-  return (
-    <div className="border-2 border-gray-100 rounded-2xl overflow-hidden hover:border-cyan-200 transition-all shadow-sm bg-white">
-      
-      {/* Header Bambino */}
-      <div className="bg-gradient-to-r from-cyan-50 to-white p-6 border-b border-gray-100">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          
-          <div className="flex-1 cursor-pointer group" onClick={() => setIsExpanded(!isExpanded)}>
-            <div className="flex items-center gap-3 mb-1">
-              <h3 className="text-xl font-bold text-blue-deep group-hover:text-cyan-700 transition-colors">
-                  {child.nome} {child.cognome}
-              </h3>
-              <span className="bg-white border border-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs font-semibold">
-                {calculateAge(child.data_nascita)} anni
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
-               <span className="font-mono bg-gray-50 px-1 rounded text-xs">{child.cf}</span>
-               {activeEnrollments.length > 0 && (
-                  <span className="flex items-center gap-1 text-cyan-700 font-bold bg-cyan-100/50 px-2 py-0.5 rounded-md text-xs">
-                     <Calendar size={12}/> {activeEnrollments.length} Iscrizioni
-                  </span>
-               )}
-            </div>
-            {child.intolleranze && child.intolleranze.length > 0 && (
-                <p className="text-xs text-orange-600 font-bold mt-2 flex items-center gap-1">
-                    <AlertTriangle size={12}/> {child.intolleranze.join(", ")}
-                </p>
-            )}
-          </div>
-
-          <div className="flex gap-2 items-center self-end md:self-center">
-            <button onClick={() => onRegister(child.id)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all flex items-center gap-2 font-bold text-sm shadow-sm whitespace-nowrap">
-               <TrendingUp size={16}/> Nuova iscrizione
-            </button>
-            <button onClick={() => onEdit(child)} className="p-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors" title="Modifica Dati">
-               <Edit2 size={18}/>
-            </button>
-            <button onClick={() => onDelete(child)} className="p-2 bg-white border border-red-100 text-red-500 rounded-lg hover:bg-red-50 transition-colors" title="Elimina Bambino">
-               <Trash2 size={18}/>
-            </button>
-            <button 
-               onClick={() => setIsExpanded(!isExpanded)} 
-               className={`p-2 ml-2 transition-colors rounded-full ${isExpanded ? 'bg-cyan-50 text-cyan-600' : 'text-gray-400 hover:bg-gray-50'}`}
-            >
-               {isExpanded ? <ChevronUp size={24}/> : <ChevronDown size={24}/>}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Body Espandibile */}
-      {isExpanded && (
-        <div className="p-6 bg-white space-y-4 animate-in slide-in-from-top-4 border-t border-gray-100">
-           <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wider mb-3 ml-1">Storico Iscrizioni</h4>
-           
-           {activeEnrollments.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                 <p className="text-sm text-gray-400 italic mb-3">Nessuna iscrizione presente per {child.nome}.</p>
-                 <button onClick={() => onRegister(child.id)} className="text-cyan-600 font-bold text-sm hover:underline flex items-center justify-center gap-1 mx-auto">
-                    <Plus size={14}/> Iscrivi ora
-                 </button>
-              </div>
-           ) : (
-              activeEnrollments.map((enr: any) => (
-                 <EnrollmentItem key={enr.id} enrollment={enr} child={child} />
-              ))
-           )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-
-// --- CONTENUTO PAGINA PRINCIPALE (Logic Wrapper) ---
 function UtenteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -230,7 +41,6 @@ function UtenteContent() {
   useEffect(() => {
     if (searchParams.get('success') === 'true' || searchParams.get('success') === 'enrollment_created') {
       showAlert("✅ Prenotazione confermata! Apri la scheda del bambino per i dettagli di pagamento.", "success");
-      // Puliamo l'URL per non mostrare il messaggio al refresh
       router.replace('/Utente');
     }
   }, [searchParams, router]);
@@ -242,10 +52,10 @@ function UtenteContent() {
 
       try {
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(profile);
+        setProfile(profile as Profile);
 
         const { data: kids } = await supabase.from('children').select('*').eq('parent_id', user.id).order('data_nascita');
-        setChildren(kids || []);
+        setChildren(kids as Child[] || []);
 
         if (kids && kids.length > 0) {
           const enrollMap: any = {};
@@ -261,55 +71,38 @@ function UtenteContent() {
       } catch (e) { console.error(e); setLoading(false); }
     };
     loadData();
-  }, []);
+  }, [router, supabase]);
 
-  // Handlers
   const handleRegister = (childId: string) => router.push(`/Iscrizione?child=${childId}`);
   
-  // HANDLER ELIMINAZIONE BAMBINO - ora semplicemente apre il modale
-  // La logica di controllo è nel backend (deleteChild)
   const handleDeleteChild = (child: Child) => {
      setDeleteModalConfig({ isOpen: true, type: "CHILD", data: child });
   };
 
-  // HANDLER ELIMINAZIONE ACCOUNT - ora semplicemente apre il modale
-  // La logica di controllo è nel backend (deleteAccount)
   const handleDeleteAccount = () => {
      setDeleteModalConfig({ isOpen: true, type: "ACCOUNT", data: null });
   };
 
-  // ESECUZIONE ELIMINAZIONE
   const performDeletion = async () => {
      try {
        if(deleteModalConfig.type === "CHILD") {
-          // Chiama la server action deleteChild
           const result = await deleteChild(deleteModalConfig.data.id);
-          
           if (result.error) {
             showAlert(result.error, "error");
             setDeleteModalConfig({ isOpen: false, type: null, data: null });
             return;
           }
-          
           showAlert(`${deleteModalConfig.data.nome} ${deleteModalConfig.data.cognome} è stato eliminato correttamente`, "success");
           setDeleteModalConfig({ isOpen: false, type: null, data: null });
-          
-          // Ricarica i dati
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
+          setTimeout(() => { window.location.reload(); }, 1000);
           
        } else if (deleteModalConfig.type === "ACCOUNT") {
-          // Chiama la server action deleteAccount
           const result = await deleteAccount();
-          
           if (result.error) {
             showAlert(result.error, "error");
             setDeleteModalConfig({ isOpen: false, type: null, data: null });
             return;
           }
-          
-          // Se l'eliminazione è andata a buon fine, esci dall'account
           await supabase.auth.signOut();
           router.push("/");
        }
@@ -416,7 +209,6 @@ function UtenteContent() {
   );
 }
 
-// --- EXPORT DEFAULT (Pagina Wrapper con Suspense) ---
 export default function PaginaUtente() {
   return (
     <main className="min-h-screen bg-cream py-12 px-4">
